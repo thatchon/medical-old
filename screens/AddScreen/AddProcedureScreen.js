@@ -22,6 +22,7 @@ function AddProcedureScreen() {
   const [procedureLevel, setProcedureLevel] = useState(0);
   const [date, setDate] = useState(new Date());
   const [show, setShow] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
 
   const [selectedHour, setSelectedHour] = useState("");
   const [selectedMinute, setSelectedMinute] = useState("");
@@ -364,7 +365,7 @@ function AddProcedureScreen() {
           <SelectList
             setSelected={setSelectedProcedures}
             data={mainProcedure}
-            placeholder={"โปรดระบุ"}
+            placeholder={"เลือกหัวข้อหัตถการ"}
           />
         </View>
 
@@ -411,11 +412,14 @@ function AddProcedureScreen() {
             }}>
               <TextInput
                 placeholder="กรอกรายละเอียด"
+                placeholderTextColor="grey"
                 value={hn}
                 onChangeText={setHN}
                 style={{
                   width: '100%',
-                  textAlign: 'center'
+                  textAlign: 'center',
+                  height: '100%',
+                  fontSize: 20
                 }}
               ></TextInput>
             </View>
@@ -449,18 +453,24 @@ function AddProcedureScreen() {
             borderColor: 'black',
             borderWidth: 1,
             borderRadius: 8,
-            alignItems: 'center',
-            justifyContent: 'center',
           }}>
             <TextInput
-              placeholder="กรอกรายละเอียด"
+              placeholder={isFocused ? '' : "กรอกรายละเอียด"}
+              placeholderTextColor="grey"
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(note.length > 0)}
               value={remarks}
               onChangeText={setRemarks}
-              style={{
-                width: '100%',
-                height: '100%',
-                textAlign: 'center'
-              }}
+              multiline
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  textAlign: 'left', // ตั้งค่าให้ข้อความจัดชิดซ้าย
+                  textAlignVertical: 'top', // ตั้งค่าให้ข้อความเริ่มที่บน
+                  paddingTop: 8, // พิจารณาเพิ่ม padding ด้านบน
+                  paddingLeft: 8, // พิจารณาเพิ่ม padding ด้านซ้าย
+                  fontSize: 20
+                }}
             ></TextInput>
           </View>
         </View>

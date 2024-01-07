@@ -25,6 +25,7 @@ function AddIpdScreen() {
   const [teachers, setTeachers] = useState([]); // สถานะสำหรับเก็บรายการอาจารย์ทั้งหมด
   const [date, setDate] = useState(new Date());
   const [show, setShow] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
 
   const [selectedHour, setSelectedHour] = useState("");
   const [selectedMinute, setSelectedMinute] = useState("");
@@ -284,6 +285,7 @@ const removeDiagnosis = (index) => {
             setSelected={onSelectTeacher}
             data={teachers}
             placeholder={"เลือกชื่ออาจารย์ผู้รับผิดชอบ"}
+            placeholderTextColor="grey"
           />
         </View>
 
@@ -305,11 +307,14 @@ const removeDiagnosis = (index) => {
           }}>
             <TextInput
               placeholder="กรอกรายละเอียด"
+              placeholderTextColor="grey"
               value={hn}
               onChangeText={setHN}
               style={{
                 width: '100%',
-                textAlign: 'center'
+                textAlign: 'center',
+                height: '100%',
+                fontSize: 20
               }}
             ></TextInput>
           </View>
@@ -335,12 +340,15 @@ const removeDiagnosis = (index) => {
               marginVertical: 8,
             }}>
           <TextInput
-              placeholder="กรอกโรคหลัก"
+              placeholder="กรอกชื่อโรคหลัก"
+              placeholderTextColor="grey"
               value={mainDiagnosis}
               onChangeText={setMainDiagnosis}
               style={{
                 width: '100%',
-                textAlign: 'center'
+                textAlign: 'center',
+                height: '100%',
+                fontSize: 20
               }}
             />
           </View>
@@ -393,17 +401,23 @@ const removeDiagnosis = (index) => {
               borderColor: 'black',
               borderWidth: 1,
               borderRadius: 8,
-              alignItems: 'center',
-              justifyContent: 'center',
             }}>
               <TextInput
-                placeholder="กรอกรายละเอียด"
+                placeholder={isFocused ? '' : "กรอกรายละเอียด"}
+                placeholderTextColor="grey"
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(note.length > 0)}
                 value={note}
                 onChangeText={setNote}
+                multiline
                 style={{
                   width: '100%',
                   height: '100%',
-                  textAlign: 'center'
+                  textAlign: 'left', // ตั้งค่าให้ข้อความจัดชิดซ้าย
+                  textAlignVertical: 'top', // ตั้งค่าให้ข้อความเริ่มที่บน
+                  paddingTop: 8, // พิจารณาเพิ่ม padding ด้านบน
+                  paddingLeft: 8, // พิจารณาเพิ่ม padding ด้านซ้าย
+                  fontSize: 20
                 }}
               ></TextInput>
             </View>

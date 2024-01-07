@@ -24,6 +24,8 @@ function OpdHistoryScreen() {
     const [modalVisible, setModalVisible] = useState(false);
   
     const [windowWidth, setWindowWidth] = useState(Dimensions.get('window').width);
+    
+    const [professionalismScoresModalVisible, setProfessionalismScoresModalVisible] = useState(false);
 
     useEffect(() => {
       const updateWindowDimensions = () => {
@@ -153,6 +155,11 @@ function OpdHistoryScreen() {
         marginTop: 10,
         marginRight: 15
       },
+      buttonProfessional: {
+        backgroundColor: "blue", // สีที่คุณต้องการ
+        padding: 10,
+        borderRadius: 10,
+      }
     });  
 
     const thaiMonths = [
@@ -337,10 +344,17 @@ function OpdHistoryScreen() {
                   <Text style={{ fontWeight: "bold" }}>Note/Reflection : </Text> {selectedPatient.note || "ไม่มี"}
                 </Text>
                 <Text style={styles.modalText}>
-                  <Text style={{ fontWeight: "bold" }}>ความคิดเห็นของอาจารย์ : </Text>
+                  <Text style={{ fontWeight: "bold"}}>***ความคิดเห็นของอาจารย์ : </Text>
                   {selectedPatient.comment || "ไม่มี"}
                 </Text>
-                  <View style={styles.buttonRow}>
+                <Pressable
+                  style={[styles.button, styles.buttonProfessional]}
+                  onPress={() => setProfessionalismScoresModalVisible(true)}
+                >
+                  <Text style={styles.textStyle}>ดูคะแนนความเป็นมืออาชีพ</Text>
+                </Pressable>
+
+                <View style={styles.buttonRow}>
               {selectedPatient.pdfUrl && (
                 <Pressable
                   style={[styles.button, styles.buttonViewPDF]}
@@ -357,6 +371,53 @@ function OpdHistoryScreen() {
                 <Text style={styles.textStyle}>ปิดหน้าต่าง</Text>
               </Pressable>
             </View>
+
+            {/* Modal สำหรับแสดงคะแนนความเป็นมืออาชีพ */}
+                  <Modal
+                    animationType="slide"
+                    transparent={true}
+                    visible={professionalismScoresModalVisible}
+                    onRequestClose={() => {
+                      setProfessionalismScoresModalVisible(!professionalismScoresModalVisible);
+                    }}
+                  >
+                    <View style={styles.centerView}>
+                      <View style={styles.modalView}>
+                        <Text style={{ fontWeight: "bold", fontSize: 28, marginBottom: 10 }}>คะแนนความเป็นมืออาชีพ</Text>
+                          <Text style={styles.modalText}>
+                            <Text style={{ fontWeight: "bold", fontSize: 20 }}>ตรงต่อเวลา : </Text>
+                            {selectedPatient.professionalismScores.punctual ? '✔️' : '❌'}
+                          </Text>
+                          <Text style={styles.modalText}>
+                            <Text style={{ fontWeight: "bold", fontSize: 20 }}>การแต่งกายเหมาะสม : </Text>
+                            {selectedPatient.professionalismScores.appropriatelyDressed ? '✔️' : '❌'}
+                          </Text>
+                          <Text style={styles.modalText}>
+                            <Text style={{ fontWeight: "bold", fontSize: 20 }}>เคารพผู้ป่วย : </Text>
+                            {selectedPatient.professionalismScores.respectsPatients ? '✔️' : '❌'}
+                          </Text>
+                          <Text style={styles.modalText}>
+                            <Text style={{ fontWeight: "bold", fontSize: 20 }}>เป็นผู้ฟังที่ดี : </Text>
+                            {selectedPatient.professionalismScores.goodListener ? '✔️' : '❌'}
+                          </Text>
+                          <Text style={styles.modalText}>
+                            <Text style={{ fontWeight: "bold", fontSize: 20 }}>ให้เกียรติเพื่อนร่วมงาน : </Text>
+                            {selectedPatient.professionalismScores.respectsColleagues ? '✔️' : '❌'}
+                          </Text>
+                          <Text style={styles.modalText}>
+                            <Text style={{ fontWeight: "bold", fontSize: 20 }}>บันทึกข้อมูลผู้ป่วยอย่างถูกต้อง : </Text>
+                            {selectedPatient.professionalismScores.accurateRecordKeeping ? '✔️' : '❌'}
+                          </Text>
+
+                        <Pressable
+                          style={[styles.button, styles.buttonClose]}
+                          onPress={() => setProfessionalismScoresModalVisible(!professionalismScoresModalVisible)}
+                        >
+                          <Text style={styles.textStyle}>ปิดหน้าต่าง</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  </Modal>
           </>
         )}
       </View>

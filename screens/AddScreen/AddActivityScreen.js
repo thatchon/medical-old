@@ -23,6 +23,7 @@ function AddActivityScreen() {
   const status = "pending"; // Status
   const [date, setDate] = useState(new Date());
   const [show, setShow] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
 
   const [selectedHour, setSelectedHour] = useState("");
   const [selectedMinute, setSelectedMinute] = useState("");
@@ -407,18 +408,24 @@ function AddActivityScreen() {
           borderColor: 'black',
           borderWidth: 1,
           borderRadius: 8,
-          alignItems: 'center',
-          justifyContent: 'center',
         }}>
           <TextInput
-            placeholder="กรอกรายละเอียด"
-            value={note}
-            onChangeText={setNote}
-            style={{
-              width: '100%',
-              height: '100%',
-              textAlign: 'center'
-            }}
+                placeholder={isFocused ? '' : "กรอกรายละเอียด"}
+                placeholderTextColor="grey"
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(note.length > 0)}
+                value={note}
+                onChangeText={setNote}
+                multiline
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  textAlign: 'left', // ตั้งค่าให้ข้อความจัดชิดซ้าย
+                  textAlignVertical: 'top', // ตั้งค่าให้ข้อความเริ่มที่บน
+                  paddingTop: 8, // พิจารณาเพิ่ม padding ด้านบน
+                  paddingLeft: 8, // พิจารณาเพิ่ม padding ด้านซ้าย
+                  fontSize: 20
+                }}
           ></TextInput>
           </View>
         </View>
