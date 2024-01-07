@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useWindowDimensions } from 'react-native';
 
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -198,6 +198,7 @@ function ProcedureHeaderRight({ navigation }) {
 }
 
 function MyNavigator() {
+
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="SelectRole">

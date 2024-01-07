@@ -41,7 +41,7 @@ const SelectRoleScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <View style={styles.banner}>
-        <Text style={styles.bannerText}>ELOG BOOK</Text>
+        <Text style={styles.bannerText}>E-LogBook</Text>
       </View>
       <View style={styles.container}>
         <Text style={[styles.titleText, { fontSize: fontSizeDynamic }]}>เลือกหน้าที่ของคุณ</Text>
