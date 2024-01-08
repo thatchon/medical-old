@@ -364,16 +364,18 @@ const removeDiagnosis = (index) => {
         </View>
         {
           selectedDiagnosis.map((diagnosis, index) => (
-            <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 8, }}>
+            <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 8, paddingHorizontal:15, }}>
+              <View style={{ flex: 1 }}>
               <SelectList
                     setSelected={(value) => {
                       const newDiagnoses = [...selectedDiagnosis];
-                      newDiagnoses[index] = { value: value }; // ปรับปรุงจาก newDiagnoses[index].value = value;
+                      newDiagnoses[index] = { value: value }; 
                       setSelectedDiagnosis(newDiagnoses);
                     }}
                 data={mainDiagnoses}
                 placeholder={"เลือกการวินิฉัย"}
               />
+              </View>
               {index === selectedDiagnosis.length - 1 ? (
                 <TouchableOpacity onPress={addDiagnosis} style={{ marginLeft: 10 }}>
                   <AntDesign name="plus" size={20} color="black" />
