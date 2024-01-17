@@ -575,8 +575,10 @@ function IpdScreen({ navigation }) {
                   {/* {selectedPatient.mainDiagnosis.map(diagnosis => diagnosis.value).join(', ')} */}
                 </Text>
                 <Text style={styles.modalText}>
-                  <Text style={{ fontWeight: "bold" }}>Co - Morbid Diseases : </Text> 
-                  {selectedPatient.coMorbid.map(diagnosis => diagnosis.value).join(', ')}
+                  <Text style={{ fontWeight: "bold" }}>Co - Morbid Diseases : </Text>
+                  {selectedPatient.coMorbid && selectedPatient.coMorbid.length > 0 && selectedPatient.coMorbid.some(diagnosis => diagnosis.value)
+                    ? selectedPatient.coMorbid.map(diagnosis => diagnosis.value).join(', ')
+                    : "ไม่ระบุ"}
                 </Text>
                 <Text style={styles.modalText}>
                   <Text style={{ fontWeight: "bold" }}>Note/Reflection : </Text> {selectedPatient.note || "ไม่มี"}

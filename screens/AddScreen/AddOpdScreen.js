@@ -201,8 +201,13 @@ const removeDiagnosis = (index) => {
   const saveDataToFirestore = async () => {
     try {
 
-      if (!selectedDiagnosis || selectedDiagnosis.some(diagnosis => !diagnosis.value)) {
-        alert("โปรดกรอก Main Diagnosis ในทุกแถว");
+      // if (!selectedDiagnosis || selectedDiagnosis.some(diagnosis => !diagnosis.value)) {
+      //   alert("โปรดกรอก Main Diagnosis ในทุกแถว");
+      //   return;
+      // }
+
+      if (!mainDiagnosis) {
+        alert("โปรดกรอก Main Diagnosis");
         return;
       }
       
@@ -229,7 +234,7 @@ const removeDiagnosis = (index) => {
         // Add a new document with a generated ID to a collection
         await addDoc(collection(db, "patients"), {
           admissionDate: timestamp,
-          coMorbid: selectedDiagnosis, // Co-Morbid Diagnosis
+          coMorbid: selectedDiagnosis.length > 0 ? selectedDiagnosis : null,
           createBy_id: uid, // User ID
           hn: hn, // HN
           mainDiagnosis: mainDiagnosis,
