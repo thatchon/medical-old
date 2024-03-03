@@ -110,7 +110,7 @@ function ProcedureHistoryScreen() {
       },
       modalText: {
         marginBottom: 15,
-        textAlign: "center",
+        textAlign: "left",
         fontSize: 16
       },
       centerView: {
@@ -125,7 +125,8 @@ function ProcedureHistoryScreen() {
         margin: 20,
         backgroundColor: "white",
         borderRadius: 20,
-        padding: 35,
+        paddingTop: 35,
+        paddingBottom: 35,
         alignItems: "center",
         justifyContent: "center",
         shadowColor: "#000",
@@ -347,6 +348,7 @@ function ProcedureHistoryScreen() {
     >
       <View style={styles.centerView}>
           <View style={styles.modalView}>
+            <ScrollView>
             {selectedProcedure && (
               <>
                 <Text style={styles.modalText}>
@@ -441,6 +443,7 @@ function ProcedureHistoryScreen() {
 
               </>
             )}
+            </ScrollView>
           </View>
         </View>
     </Modal>

@@ -3,44 +3,46 @@ import { View, Text, Button, StyleSheet, TouchableOpacity, TextInput, Platform, 
 import { SelectList } from "react-native-dropdown-select-list";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { db, auth, storage } from '../../data/firebaseDB'
-import { getDocs, addDoc, collection, query, where, Timestamp, } from "firebase/firestore";
+import { getDocs, addDoc, collection, query, where, Timestamp, doc, updateDoc } from "firebase/firestore";
 import { useDropzone } from 'react-dropzone';
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { FontAwesome, AntDesign } from "@expo/vector-icons";
 
-function AddOpdScreen() {
-  const [selectedDate, setSelectedDate] = useState(new Date());
+function EditOpdScreen({ route, navigation }) {
+  const { patientData } = route.params;
 
-  const [mainDiagnosis, setMainDiagnosis] = useState(""); // ใช้ TextInput สำหรับ Main Diagnosis
-  const [selectedDiagnosis, setSelectedDiagnosis] = useState([{}]); // เก็บโรคที่เลือกทั้งหมด
-  const [mainDiagnoses, setMainDiagnoses] = useState([]); // เก็บรายชื่อโรค
-
-  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
-
-  const [hn, setHN] = useState(""); // HN
-  const [coMorbid, setCoMorbid] = useState(""); // Co-Morbid Diagnosis
-  const [note, setNote] = useState(""); // Note
-  const status = "pending"; // Status
-  const patientType = "outpatient"; // Patient Type
-  const [createBy_id, setCreateById] = useState(null); // User ID
-  const [professorId, setProfessorId] = useState(null); // สถานะสำหรับเก็บ id ของอาจารย์ที่ถูกเลือก
-  const [professorName, setProfessorName] = useState(null); // สถานะสำหรับเก็บชื่ออาจารย์ที่ถูกเลือก
-  const [teachers, setTeachers] = useState([]); // สถานะสำหรับเก็บรายการอาจารย์ทั้งหมด
+  const [selectedDate, setSelectedDate] = useState(patientData.admissionDate.toDate());
+  const [mainDiagnosis, setMainDiagnosis] = useState(patientData.mainDiagnosis);
+  const [selectedDiagnosis, setSelectedDiagnosis] = useState(patientData.coMorbid || []);
+  const [hn, setHN] = useState(patientData.hn);
+  const [note, setNote] = useState(patientData.note);
+  const [selectedHour, setSelectedHour] = useState(patientData.hours.toString());
+  const [selectedMinute, setSelectedMinute] = useState(patientData.minutes.toString());
+  const [professorName, setProfessorName] = useState(patientData.professorName); // สถานะสำหรับเก็บชื่ออาจารย์ที่ถูกเลือก
+  const [professorId, setProfessorId] = useState(patientData.professorId);
+  const [mainDiagnoses, setMainDiagnoses] = useState([]);
+  const [teachers, setTeachers] = useState([]);
+  const [pdfFile, setPdfFile] = useState(null);
+  const [pdfUrl, setPdfUrl] = useState(patientData.pdfUrl);
+  const [isFocused, setIsFocused] = useState(false);
   const [date, setDate] = useState(new Date());
   const [show, setShow] = useState(false);
-  const [isFocused, setIsFocused] = useState(false);
-  
-  const [selectedHour, setSelectedHour] = useState("");
-  const [selectedMinute, setSelectedMinute] = useState("");
-
-  const [pdfFile, setPdfFile] = useState(null);
-  const [pdfUrl, setPdfUrl] = useState('');
 
   const [dimensions, setDimensions] = useState(Dimensions.get('window'));
 
   const hours = Array.from({ length: 24 }, (_, i) => ({ key: i.toString(), value: i.toString() }));
   const minutes = Array.from({ length: 60 }, (_, i) => ({ key: i.toString(), value: i.toString() }));
-
+  // useEffect(() => {
+  //   console.log("Teachers:", ); // ตรวจสอบข้อมูลอาจารย์
+  //   console.log("Selected Professor ID:", professorId); // ตรวจสอบ ID ของอาจารย์ที่เลือก
+  //   console.log("Hours:", hours); // ตรวจสอบข้อมูลชั่วโมง
+  //   console.log("Selected Hour:", selectedHour); // ตรวจสอบชั่วโมงที่เลือก
+  //   console.log("Minutes:", minutes); // ตรวจสอบข้อมูลนาที
+  //   console.log("Selected Minute:", selectedMinute); // ตรวจสอบนาทีที่เลือก
+  // }, [teachers, professorId, hours, selectedHour, minutes, selectedMinute]);
+  useEffect(() => {
+    console.log("Loaded data:", patientData);
+  }, [patientData]);
   useEffect(() => {
     const updateLayout = () => {
       setDimensions(Dimensions.get('window'));
@@ -48,6 +50,18 @@ function AddOpdScreen() {
 
     Dimensions.addEventListener('change', updateLayout);
     return () => Dimensions.removeEventListener('change', updateLayout);
+  }, []);
+
+  useEffect(() => {
+    async function fetchData() {
+      const diagnoses = await fetchMainDiagnoses();
+      setMainDiagnoses(diagnoses);
+
+      const teachers = await fetchTeachers();
+      setTeachers(teachers);
+    }
+
+    fetchData();
   }, []);
 
   const styles = StyleSheet.create({
@@ -59,6 +73,58 @@ function AddOpdScreen() {
       paddingHorizontal: dimensions.width < 768 ? 10 : 30,
     },
   });
+
+  const fetchMainDiagnoses = async () => {
+    const mainDiagnosisRef = collection(db, "mainDiagnosis");
+    const diagnosisSnapshot = await getDocs(mainDiagnosisRef);
+    return diagnosisSnapshot.docs.map(doc => {
+      const disease = doc.data().diseases;
+      return disease.map(d => ({ key: d, value: d }));
+    }).flat();
+  };
+
+  const fetchTeachers = async () => {
+    const teacherRef = collection(db, "users");
+    const q = query(teacherRef, where("role", "==", "teacher"));
+    const teacherSnapshot = await getDocs(q);
+    return teacherSnapshot.docs.map(doc => ({
+      key: doc.id,
+      value: doc.data().displayName
+    }));
+  };
+
+  const saveDataToFirestore = async () => {
+    if (!mainDiagnosis || !hn || !selectedDate || !professorId) {
+      alert("กรุณากรอกข้อมูลที่จำเป็น");
+      return;
+    }
+
+    try {
+      let uploadedPdfUrl = pdfUrl;
+      if (pdfFile && typeof pdfFile === 'object') {
+        uploadedPdfUrl = await uploadPdfToStorage();
+      }
+
+      const patientDocRef = doc(db, "patients", patientData.id);
+      await updateDoc(patientDocRef, {
+        admissionDate: Timestamp.fromDate(new Date(selectedDate)),
+        coMorbid: selectedDiagnosis,
+        hn,
+        mainDiagnosis,
+        note,
+        professorId,
+        professorName: teachers.find(t => t.key === professorId)?.value,
+        hours: parseInt(selectedHour),
+        minutes: parseInt(selectedMinute),
+        pdfUrl: uploadedPdfUrl
+      });
+
+      alert("อัปเดตข้อมูลสำเร็จ");
+    } catch (error) {
+      console.error("Error updating document: ", error);
+      alert("เกิดข้อผิดพลาดในการอัปเดตข้อมูล");
+    }
+  };
 
   const onChange = (event, selectedDate) => {
     const currentDate = selectedDate || date;
@@ -102,8 +168,8 @@ function AddOpdScreen() {
       );
     }
   };
+
   const onDrop = acceptedFiles => {
-    // Check if the uploaded file is a PDF
     if (acceptedFiles[0].type !== 'application/pdf') {
       alert('กรุณาอัปโหลดเฉพาะไฟล์ PDF');
       return;
@@ -115,21 +181,19 @@ function AddOpdScreen() {
     onDrop,
     accept: 'application/pdf'
   });
-  
+
   const uploadPdfToStorage = async () => {
     if (!pdfFile) return null;
-  
+
     try {
-      const storageRef = ref(storage, 'pdfs/' + pdfFile.name);
+      const storageRef = ref(storage, `pdfs/${pdfFile.name}`);
       await uploadBytes(storageRef, pdfFile);
-      const downloadURL = await getDownloadURL(storageRef);
-      return downloadURL;
+      return await getDownloadURL(storageRef);
     } catch (error) {
       console.error("Error uploading PDF to Firebase Storage:", error);
-      alert("เกิดข้อผิดพลาดในการอัปโหลดไฟล์ PDF");
       return null;
     }
-};
+  };
 
   const onSelectTeacher = (selectedTeacherId) => {
     const selectedTeacher = teachers.find(teacher => teacher.key === selectedTeacherId);
@@ -141,7 +205,7 @@ function AddOpdScreen() {
         console.error('Teacher not found:', selectedTeacherId);
     }
 }
-  
+
 const addDiagnosis = () => {
   setSelectedDiagnosis([...selectedDiagnosis, {}]);
 };
@@ -151,125 +215,6 @@ const removeDiagnosis = (index) => {
   newDiagnosis.splice(index, 1);
   setSelectedDiagnosis(newDiagnosis);
 };
-
-  useEffect(() => {
-    async function fetchMainDiagnoses() {
-      try {
-        const mainDiagnosisRef = collection(db, "mainDiagnosis");
-        const querySnapshot = await getDocs(mainDiagnosisRef);
-  
-        const diagnoses = [];
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          data.diseases.forEach((disease) => {
-            diagnoses.push({ key: disease, value: disease });
-          });
-        });
-  
-        setMainDiagnoses(diagnoses);
-      } catch (error) {
-        console.error("Error fetching main diagnoses:", error);
-      }
-    }
-  
-    fetchMainDiagnoses();
-  }, []);
-
-  useEffect(() => {
-    async function fetchTeachers() {
-      try {
-        const teacherRef = collection(db, "users");
-        const q = query(teacherRef, where("role", "==", "teacher")); // ใช้ query และ where ในการ filter
-  
-        const querySnapshot = await getDocs(q); // ใช้ query ที่ถูก filter ในการ getDocs
-        
-        const teacherArray = [];
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          teacherArray.push({ key: doc.id, value: data.displayName });
-        });
-  
-        setTeachers(teacherArray); // ตั้งค่ารายการอาจารย์
-      } catch (error) {
-        console.error("Error fetching teachers:", error);
-      }
-    }
-  
-    fetchTeachers(); // เรียกฟังก์ชันเพื่อดึงข้อมูลอาจารย์
-  }, []);
-
-  const saveDataToFirestore = async () => {
-    try {
-
-      // if (!selectedDiagnosis || selectedDiagnosis.some(diagnosis => !diagnosis.value)) {
-      //   alert("โปรดกรอก Main Diagnosis ในทุกแถว");
-      //   return;
-      // }
-
-      if (!mainDiagnosis) {
-        alert("โปรดกรอก Main Diagnosis");
-        return;
-      }
-      
-      if (!hn) {
-        alert("โปรดกรอก HN");
-        return;
-      }
-  
-      if (!selectedDate) {
-        alert("โปรดเลือกวันที่รับผู้ป่วย");
-        return;
-      }
-
-      if (!professorName) {
-        alert("โปรดเลือกอาจารย์");
-        return;
-      }
-      const user = auth.currentUser;
-      const uploadedPdfUrl = await uploadPdfToStorage();
-
-      if (user) {
-        const { uid } = user; 
-        const timestamp = Timestamp.fromDate(selectedDate); 
-        // Add a new document with a generated ID to a collection
-        await addDoc(collection(db, "patients"), {
-          admissionDate: timestamp,
-          coMorbid: selectedDiagnosis.length > 0 ? selectedDiagnosis : null,
-          createBy_id: uid, // User ID
-          hn: hn, // HN
-          mainDiagnosis: mainDiagnosis,
-          note: note, // Note
-          patientType: patientType,
-          professorName: professorName,
-          status: status,
-          professorId: professorId,
-          pdfUrl: uploadedPdfUrl || "",
-          hours: selectedHour,
-          minutes: selectedMinute
-          // Add more fields as needed
-        });
-
-        // Clear the input fields after successfully saving data
-        setHN("");
-        setSelectedDate(new Date());
-        setSelectedDiagnosis([{}]);
-        setCoMorbid("");
-        setNote("");
-        setPdfFile(null);
-        setSelectedHour("");
-        setSelectedMinute("");
-        // Display a success message or perform any other action
-        alert("บันทึกข้อมูลสำเร็จ");
-      } else {
-        // Handle the case when no user is authenticated
-        alert("ไม่พบข้อมูลผู้ใช้");
-      }
-    } catch (error) {
-      console.error("Error adding document: ", error);
-      // Handle errors or display an error message
-      alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
-    }
-  };
 
   return (
     <ScrollView>
@@ -289,6 +234,7 @@ const removeDiagnosis = (index) => {
             textAlign: 'center' }}>ชั่วโมง</Text>
             <SelectList
               setSelected={setSelectedHour}
+              defaultOption={{ key: selectedHour, value: selectedHour }}
               data={hours}
               placeholder="เลือกชั่วโมง"
               search={false}
@@ -302,6 +248,7 @@ const removeDiagnosis = (index) => {
             textAlign: 'center' }}>นาที</Text>
             <SelectList
               setSelected={setSelectedMinute}
+              defaultOption={{ key: selectedMinute, value: selectedMinute }}
               data={minutes}
               placeholder="เลือกนาที"
               search={false}
@@ -319,9 +266,10 @@ const removeDiagnosis = (index) => {
 
           }}>อาจารย์ผู้รับผิดชอบ</Text>
           <SelectList
-            setSelected={onSelectTeacher}
+            setSelected={setProfessorId}
             data={teachers}
-            placeholder={"เลือกชื่ออาจารย์ผู้รับผิดชอบ"}
+            defaultOption={{  key: professorId, value: professorName }}
+            placeholder="เลือกชื่ออาจารย์ผู้รับผิดชอบ"
             placeholderTextColor="grey"
           />
         </View>
@@ -410,6 +358,7 @@ const removeDiagnosis = (index) => {
                         setSelectedDiagnosis(newDiagnoses);
                       }}
                   data={mainDiagnoses}
+                  defaultOption={diagnosis.value ? { key: diagnosis.value, value: diagnosis.value } : null} // กำหนดค่าเริ่มต้นโดยใช้โครงสร้าง key-value
                   placeholder={"เลือกการวินิฉัย"}
                 />
               </View>
@@ -521,4 +470,4 @@ const removeDiagnosis = (index) => {
   );
 }
 
-export default AddOpdScreen;
+export default EditOpdScreen;

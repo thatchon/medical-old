@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { collection, getDocs, doc, getDoc, updateDoc, Timestamp } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc, updateDoc, Timestamp, deleteDoc } from "firebase/firestore";
 import { db } from '../data/firebaseDB';
 import {
   Alert,
@@ -17,11 +17,13 @@ import {
   CheckBox
 } from "react-native";
 import { useSelector } from "react-redux";
-import { FontAwesome } from "@expo/vector-icons";
+import { Ionicons, FontAwesome, MaterialIcons } from "@expo/vector-icons";
 
 function ProcedureScreen({ navigation }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [confirmationModalVisible, setConfirmationModalVisible] = useState(false);
+  const [deleteConfirmationVisible, setDeleteConfirmationVisible] = useState(false);
+  const [procedureToDelete, setProcedureToDelete] = useState(null);
   const [procedureData, setProcedureData] = useState([]);
   const [selectedProcedure, setSelectedProcedure] = useState(null);
   const [comment, setComment] = useState(''); // สำหรับเก็บความคิดเห็นของอาจารย์
@@ -138,7 +140,7 @@ function ProcedureScreen({ navigation }) {
     },
     modalText: {
       marginBottom: 15,
-      textAlign: "center",
+      textAlign: "left",
       fontSize: 16
     },
     centerView: {
@@ -342,6 +344,7 @@ function ProcedureScreen({ navigation }) {
   const handleCloseModal = () => {
     setConfirmationModalVisible(false);
     setComment(''); // ล้างความคิดเห็น
+    setRating('');
   };
 
   const handleApprove = async () => {
@@ -475,6 +478,16 @@ function ProcedureScreen({ navigation }) {
     }
   };
 
+  const handleDelete = async (procedureId) => {
+    try {
+      const proceduresDocRef = doc(db, "procedures", procedureId);
+      await deleteDoc(proceduresDocRef);
+      loadProcedureData(); // โหลดข้อมูลผู้ป่วยใหม่หลังจากลบ
+    } catch (error) {
+      console.error("Error deleting patient:", error);
+    }
+  };
+
   const renderCards = () => {
     return procedureData
       .filter(procedure => procedure.status === 'pending') // กรองเฉพาะข้อมูลที่มีสถานะเป็น pending
@@ -500,6 +513,26 @@ function ProcedureScreen({ navigation }) {
                 <Text style={{ marginLeft: 20, lineHeight: 30, opacity: 0.4 }}>
                   <FontAwesome name="calendar" size={20} color="black" /> {formatDateToThai(procedure.admissionDate.toDate())}
                 </Text>
+
+                <TouchableOpacity 
+                    style={{ position: 'absolute', top: 10, right: 10 }}
+                    onPress={() => {
+                      navigation.navigate('EditProcedure', { procedureData: procedure });
+                    }}
+                  >
+                    <FontAwesome name="edit" size={24} color="gray" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity 
+                    style={{ position: 'absolute', bottom: 10, right: 10 }}
+                    onPress={() => {
+                      setProcedureToDelete(procedure.id);
+                      setDeleteConfirmationVisible(true);
+                    }}
+                  >
+                    <MaterialIcons name="delete" size={24} color="red" />
+                  </TouchableOpacity>
+
               </>
             ) : (
               <>
@@ -558,7 +591,7 @@ function ProcedureScreen({ navigation }) {
           >
               <View style={styles.centerView}>
                   <View style={styles.modalView}>
-                  <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 10 }}>Rating:</Text>
+                  <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 10 }}>Rating</Text>
                   <View style={styles.checkboxContainer}>
                     <CheckBox
                       value={rating === 'Excellent'}
@@ -647,7 +680,38 @@ function ProcedureScreen({ navigation }) {
         </ScrollView>
       </View>
 
+    {/* Modal สำหรับยืนยันการลบ */}
+    <Modal
+          animationType="fade"
+          transparent={true}
+          visible={deleteConfirmationVisible}
+          onRequestClose={() => setDeleteConfirmationVisible(false)}
+        >
+          <View style={styles.centerView}>
+            <View style={styles.modalView}>
+              <Text style={styles.modalText}>ยืนยันการลบข้อมูลหัตถการ?</Text>
+              <View style={styles.buttonContainer}>
+                <Pressable
+                  style={[styles.recheckModalButton, styles.buttonApprove]}
+                  onPress={() => {
+                    handleDelete(procedureToDelete);
+                    setDeleteConfirmationVisible(false);
+                  }}
+                >
+                  <Text style={styles.textStyle}>ยืนยัน</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.recheckModalButton, styles.buttonCancel]}
+                  onPress={() => setDeleteConfirmationVisible(false)}
+                >
+                  <Text style={styles.textStyle}>ยกเลิก</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
       {/*  Modal สำหรับแสดงข้อมูลในการ์ด */}
+
       <Modal
         animationType="fade"
         transparent={true}
@@ -659,6 +723,7 @@ function ProcedureScreen({ navigation }) {
       >
         <View style={styles.centerView}>
           <View style={styles.modalView}>
+            <ScrollView>
             {selectedProcedure && (
               <>
                 <Text style={styles.modalText}>
@@ -745,6 +810,7 @@ function ProcedureScreen({ navigation }) {
 
               </>
             )}
+            </ScrollView>
           </View>
         </View>
       </Modal>

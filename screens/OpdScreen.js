@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { collection, getDocs, doc, getDoc, setDoc, updateDoc, Timestamp } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc, setDoc, updateDoc, Timestamp, deleteDoc } from "firebase/firestore";
 import { db } from '../data/firebaseDB';
 import {
   Alert,
@@ -16,11 +16,13 @@ import {
   CheckBox
 } from "react-native";
 import { useSelector } from "react-redux";
-import { Ionicons, FontAwesome } from "@expo/vector-icons";
+import { Ionicons, FontAwesome, MaterialIcons } from "@expo/vector-icons";
 
 function OpdScreen({ navigation }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [confirmationModalVisible, setConfirmationModalVisible] = useState(false);
+  const [deleteConfirmationVisible, setDeleteConfirmationVisible] = useState(false);
+  const [patientToDelete, setPatientToDelete] = useState(null);
   const [patientData, setPatientData] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [comment, setComment] = useState(''); // สำหรับเก็บความคิดเห็นของอาจารย์
@@ -40,6 +42,14 @@ function OpdScreen({ navigation }) {
     respectsColleagues: false,
     accurateRecordKeeping: false
   });
+
+  // ประกาศ State สำหรับการเก็บค่าการให้คะแนน
+  const [rating, setRating] = useState('');
+
+  // ฟังก์ชันสำหรับการจัดการการเปลี่ยนแปลงของ CheckBox
+  const handleRatingChange = (newRating) => {
+    setRating(newRating);
+  };
 
   const updateWindowDimensions = () => {
     setWindowWidth(Dimensions.get('window').width);
@@ -145,7 +155,7 @@ function OpdScreen({ navigation }) {
     },
     modalText: {
       marginBottom: 15,
-      textAlign: "center",
+      textAlign: "left",
       fontSize: 16
     },
     centerView: {
@@ -244,6 +254,16 @@ function OpdScreen({ navigation }) {
     checkboxLabel: {
       marginLeft: 10,
     },
+    deleteButton: {
+      backgroundColor: "red",
+      padding: 10,
+      borderRadius: 5,
+      margin: 5
+    },
+    buttonText: {
+      color: "white",
+      fontSize: 16
+    }
   });
 
   const thaiMonths = [
@@ -344,6 +364,15 @@ function OpdScreen({ navigation }) {
   const handleCloseModal = () => {
     setConfirmationModalVisible(false);
     setComment(''); // ล้างความคิดเห็น
+    setRating('');
+    setProfessionalismScores({
+      punctual: false,
+      appropriatelyDressed: false,
+      respectsPatients: false,
+      goodListener: false,
+      respectsColleagues: false,
+      accurateRecordKeeping: false
+    });
   };
 
   const handleApprove = async () => {
@@ -352,6 +381,7 @@ function OpdScreen({ navigation }) {
       await updateDoc(patientDocRef, {
         status: 'approved',
         comment: comment,
+        rating: rating,
         approvalTimestamp: Timestamp.now(),
         professionalismScores: professionalismScores // บันทึกคะแนนความเป็นมืออาชีพ
       });
@@ -370,6 +400,7 @@ function OpdScreen({ navigation }) {
       await updateDoc(patientDocRef, {
         status: 'rejected',
         comment: comment,
+        rating: rating,
         rejectionTimestamp: Timestamp.now(),
         professionalismScores: professionalismScores
       });
@@ -383,6 +414,7 @@ function OpdScreen({ navigation }) {
 
   const resetScoresAndComment = () => {
     setComment('');
+    setRating('');
     setProfessionalismScores({
       punctual: false,
       appropriatelyDressed: false,
@@ -475,6 +507,16 @@ function OpdScreen({ navigation }) {
     return null;
   };
 
+  const handleDelete = async (patientId) => {
+    try {
+      const patientDocRef = doc(db, "patients", patientId);
+      await deleteDoc(patientDocRef);
+      loadPatientData(); // โหลดข้อมูลผู้ป่วยใหม่หลังจากลบ
+    } catch (error) {
+      console.error("Error deleting patient:", error);
+    }
+  };
+
   const renderCards = () => {
     return patientData
       .filter(patient => patient.status === 'pending')
@@ -497,6 +539,25 @@ function OpdScreen({ navigation }) {
                   <Text style={{ marginLeft: 20, lineHeight: 30, opacity: 0.4 }}>
                     <FontAwesome name="calendar" size={20} color="black" /> {formatDateToThai(patient.admissionDate.toDate())}
                   </Text>
+
+                  <TouchableOpacity 
+                    style={{ position: 'absolute', top: 10, right: 10 }}
+                    onPress={() => {
+                      navigation.navigate('EditOpd', { patientData: patient });
+                    }}
+                  >
+                    <FontAwesome name="edit" size={24} color="gray" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity 
+                    style={{ position: 'absolute', bottom: 10, right: 10 }}
+                    onPress={() => {
+                      setPatientToDelete(patient.id);
+                      setDeleteConfirmationVisible(true);
+                    }}
+                  >
+                    <MaterialIcons name="delete" size={24} color="red" />
+                  </TouchableOpacity>
                 </>
               ) : (
                 <>
@@ -557,7 +618,7 @@ function OpdScreen({ navigation }) {
       >
         <View style={styles.centerView}>
           <View style={styles.modalView}>
-
+          <ScrollView style={{ width: '100%' }}>
             <Text style={styles.professionalismHeader}>Professionalism</Text>
             {/* แสดง Checkbox และ Label */}
             <View style={styles.checkboxContainer}>
@@ -608,6 +669,29 @@ function OpdScreen({ navigation }) {
               <Text style={styles.checkboxLabel}>บันทึกข้อมูลผู้ป่วยอย่างถูกต้อง</Text>
             </View>
 
+            <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 10 }}>Rating</Text>
+                  <View style={styles.checkboxContainer}>
+                    <CheckBox
+                      value={rating === 'Excellent'}
+                      onValueChange={() => handleRatingChange('Excellent')}
+                    />
+                    <Text style={styles.checkboxLabel}>Excellent</Text>
+                  </View>
+                  <View style={styles.checkboxContainer}>
+                    <CheckBox
+                      value={rating === 'Good'}
+                      onValueChange={() => handleRatingChange('Good')}
+                    />
+                    <Text style={styles.checkboxLabel}>Good</Text>
+                  </View>
+                  <View style={styles.checkboxContainer}>
+                    <CheckBox
+                      value={rating === 'Acceptable'}
+                      onValueChange={() => handleRatingChange('Acceptable')}
+                    />
+                    <Text style={styles.checkboxLabel}>Acceptable</Text>
+                  </View>
+                  
             <TextInput
               placeholder="กรุณาใส่ความคิดเห็น"
               value={comment}
@@ -632,6 +716,7 @@ function OpdScreen({ navigation }) {
                 <Text style={styles.textStyle}>ยกเลิก</Text>
               </Pressable>
             </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -667,6 +752,37 @@ function OpdScreen({ navigation }) {
         </View>
       </Modal>
 
+    {/* Modal สำหรับยืนยันการลบ */}
+      <Modal
+          animationType="fade"
+          transparent={true}
+          visible={deleteConfirmationVisible}
+          onRequestClose={() => setDeleteConfirmationVisible(false)}
+        >
+          <View style={styles.centerView}>
+            <View style={styles.modalView}>
+              <Text style={styles.modalText}>ยืนยันการลบข้อมูลผู้ป่วย?</Text>
+              <View style={styles.buttonContainer}>
+                <Pressable
+                  style={[styles.recheckModalButton, styles.buttonApprove]}
+                  onPress={() => {
+                    handleDelete(patientToDelete);
+                    setDeleteConfirmationVisible(false);
+                  }}
+                >
+                  <Text style={styles.textStyle}>ยืนยัน</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.recheckModalButton, styles.buttonCancel]}
+                  onPress={() => setDeleteConfirmationVisible(false)}
+                >
+                  <Text style={styles.textStyle}>ยกเลิก</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
       <View style={styles.boxCard}>
         <ScrollView>
           {renderCards()}
@@ -685,6 +801,7 @@ function OpdScreen({ navigation }) {
       >
         <View style={styles.centerView}>
           <View style={styles.modalView}>
+            <ScrollView>
             {selectedPatient && (
               <>
                 <Text style={styles.modalText}>
@@ -735,6 +852,7 @@ function OpdScreen({ navigation }) {
                 </View>
               </>
             )}
+            </ScrollView>
           </View>
         </View>
       </Modal>

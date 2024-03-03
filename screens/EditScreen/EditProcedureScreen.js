@@ -3,29 +3,29 @@ import { View, Text, Button, StyleSheet, TouchableOpacity, TextInput, CheckBox, 
 import { SelectList } from "react-native-dropdown-select-list";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { db, auth, storage } from '../../data/firebaseDB'
-import { getDocs, addDoc, collection, query, where, Timestamp, updateDoc } from "firebase/firestore";
+import { getDocs, addDoc, collection, query, where, Timestamp, updateDoc, doc } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
-function AddProcedureScreen() {
-  const [selectedDate, setSelectedDate] = useState(new Date());
+function EditProcedureScreen({ route, navigation }) {
+  const { procedureData } = route.params;
 
-  const [selectedProcedures, setSelectedProcedures] = useState(""); // State for selected Procedures
+  const [selectedDate, setSelectedDate] = useState(procedureData.admissionDate.toDate());
+
+  const [selectedProcedures, setSelectedProcedures] = useState(procedureData.procedureType); // State for selected Procedures
   const [mainProcedure, setMainProcedure] = useState([]); // State to store main Procedure
 
-  const [hn, setHN] = useState(""); // HN
-  const [remarks, setRemarks] = useState(""); // remarks
-  const status = "pending"; // Status
-  const [createBy_id, setCreateById] = useState(null); // User ID
-  const [approvedById, setApprovedById] = useState(null); // สถานะสำหรับเก็บ id ของอาจารย์ที่ถูกเลือก
-  const [approvedByName, setApprovedByName] = useState(null); // สถานะสำหรับเก็บชื่ออาจารย์ที่ถูกเลือก
+  const [hn, setHN] = useState(procedureData.hn); // HN
+  const [remarks, setRemarks] = useState(procedureData.remarks); // remarks
+  const [approvedById, setApprovedById] = useState(procedureData.approvedById); // สถานะสำหรับเก็บ id ของอาจารย์ที่ถูกเลือก
+  const [approvedByName, setApprovedByName] = useState(procedureData.approvedByName); // สถานะสำหรับเก็บชื่ออาจารย์ที่ถูกเลือก
   const [teachers, setTeachers] = useState([]); // สถานะสำหรับเก็บรายการอาจารย์ทั้งหมด
-  const [procedureLevel, setProcedureLevel] = useState(0);
+  const [procedureLevel, setProcedureLevel] = useState(procedureData.procedureLevel);
   const [date, setDate] = useState(new Date());
   const [show, setShow] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
 
-  const [selectedHour, setSelectedHour] = useState("");
-  const [selectedMinute, setSelectedMinute] = useState("");
+  const [selectedHour, setSelectedHour] = useState(procedureData.hours.toString());
+  const [selectedMinute, setSelectedMinute] = useState(procedureData.minutes.toString());
 
   const [uploadedImages, setUploadedImages] = useState([]);
 
@@ -33,7 +33,9 @@ function AddProcedureScreen() {
 
   const hours = Array.from({ length: 24 }, (_, i) => ({ key: i.toString(), value: i.toString() }));
   const minutes = Array.from({ length: 60 }, (_, i) => ({ key: i.toString(), value: i.toString() }));
-
+  useEffect(() => {
+    console.log("Hours:", mainProcedure); // ตรวจสอบข้อมูลชั่วโมง
+  }, [mainProcedure]);
   useEffect(() => {
     const updateLayout = () => {
       setDimensions(Dimensions.get('window'));
@@ -279,38 +281,28 @@ function AddProcedureScreen() {
       const timestamp = Timestamp.fromDate(selectedDate);
   
       // Step 1: Save patient data (excluding images) and retrieve the Document ID
-      const docRef = await addDoc(collection(db, "procedures"), {
-        admissionDate: timestamp,
-        createBy_id: user.uid,
-        hn: hn,
+
+      const docRef = doc(db, "procedures", procedureData.id);
+      await updateDoc(docRef, {
+        admissionDate: Timestamp.fromDate(new Date(selectedDate)),
+        hn,
         procedureType: selectedProcedures,
         remarks: remarks,
-        approvedByName: approvedByName,
-        status: status,
+        approvedByName: teachers.find(t => t.key === approvedById)?.value,
         approvedById: approvedById,
         procedureLevel: procedureLevel,
         images: [], // We'll store the image URLs in the next step
-        hours: selectedHour,
-        minutes: selectedMinute
+        hours: parseInt(selectedHour),
+        minutes: parseInt(selectedMinute)
       });
   
-      // Step 2: Use the Document ID as a folder name for image uploads and then update image URLs in Firestore
       const imageUrls = await uploadImages(uploadedImages, docRef.id);
       await updateDoc(docRef, { images: imageUrls });
-  
-      // Clear the input fields and states
-      setHN("");
-      setSelectedDate(new Date());
-      setSelectedProcedures("");
-      setRemarks("");
-      setProcedureLevel(null);
-      setSelectedHour("");
-      setSelectedMinute("");
-  
-      alert("บันทึกข้อมูลสำเร็จ");
+
+      alert("อัปเดตข้อมูลสำเร็จ");
     } catch (error) {
-      console.error("Error adding document: ", error);
-      alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+      console.error("Error updating document: ", error);
+      alert("เกิดข้อผิดพลาดในการอัปเดตข้อมูล");
     }
   };
 
@@ -332,6 +324,7 @@ function AddProcedureScreen() {
             textAlign: 'center' }}>ชั่วโมง</Text>
             <SelectList
               setSelected={setSelectedHour}
+              defaultOption={{ key: selectedHour, value: selectedHour }}
               data={hours}
               placeholder="เลือกชั่วโมง"
               search={false}
@@ -345,6 +338,7 @@ function AddProcedureScreen() {
             textAlign: 'center' }}>นาที</Text>
             <SelectList
               setSelected={setSelectedMinute}
+              defaultOption={{ key: selectedMinute, value: selectedMinute }}
               data={minutes}
               placeholder="เลือกนาที"
               search={false}
@@ -364,6 +358,7 @@ function AddProcedureScreen() {
           }}>Procedure</Text>
           <SelectList
             setSelected={setSelectedProcedures}
+            defaultOption={{ key: selectedProcedures, value: selectedProcedures }}
             data={mainProcedure}
             placeholder={"เลือกหัวข้อหัตถการ"}
           />
@@ -435,6 +430,7 @@ function AddProcedureScreen() {
           }}>ผู้ Approve</Text>
           <SelectList
             setSelected={onSelectTeacher}
+            defaultOption={{  key: approvedById, value: approvedByName }}
             data={teachers}
             placeholder={"เลือกชื่ออาจารย์"}
           />
@@ -458,6 +454,7 @@ function AddProcedureScreen() {
               placeholder={isFocused ? '' : "กรอกรายละเอียด"}
               placeholderTextColor="grey"
               onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(note.length > 0)}
               value={remarks}
               onChangeText={setRemarks}
               multiline
@@ -510,4 +507,4 @@ function AddProcedureScreen() {
   );
 }
 
-export default AddProcedureScreen;
+export default EditProcedureScreen;

@@ -110,7 +110,7 @@ function OpdHistoryScreen() {
       },
       modalText: {
         marginBottom: 15,
-        textAlign: "center",
+        textAlign: "left",
         fontSize: 16
       },
       centerView: {
@@ -125,7 +125,8 @@ function OpdHistoryScreen() {
         margin: 20,
         backgroundColor: "white",
         borderRadius: 20,
-        padding: 35,
+        paddingTop: 35,
+        paddingBottom: 35,
         alignItems: "center",
         justifyContent: "center",
         shadowColor: "#000",
@@ -146,12 +147,11 @@ function OpdHistoryScreen() {
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        width: '100%', // ขนาดของ container ที่มีปุ่ม
+        // width: '100%', // ขนาดของ container ที่มีปุ่ม
       },
       buttonViewPDF: {
         backgroundColor: "#05AB9F", // สีที่คุณต้องการ
         padding: 10,
-        borderRadius: 10,
         marginTop: 10,
         marginRight: 15
       },
@@ -159,6 +159,9 @@ function OpdHistoryScreen() {
         backgroundColor: "blue", // สีที่คุณต้องการ
         padding: 10,
         borderRadius: 10,
+        alignContent: 'center',
+        alignItems: 'center',
+        justifyContent: 'center'
       }
     });  
 
@@ -314,6 +317,7 @@ function OpdHistoryScreen() {
     >
       <View style={styles.centerView}>
           <View style={styles.modalView}>
+            <ScrollView>
             {selectedPatient && (
               <>
                 <Text style={styles.modalText}>
@@ -342,6 +346,10 @@ function OpdHistoryScreen() {
                 </Text>
                 <Text style={styles.modalText}>
                   <Text style={{ fontWeight: "bold" }}>Note/Reflection : </Text> {selectedPatient.note || "ไม่มี"}
+                </Text>
+                <Text style={styles.modalText}>
+                  <Text style={{ fontWeight: "bold" }}>Rating : </Text>
+                  {selectedPatient.rating || "ไม่มี"}
                 </Text>
                 <Text style={styles.modalText}>
                   <Text style={{ fontWeight: "bold"}}>***ความคิดเห็นของอาจารย์ : </Text>
@@ -415,11 +423,13 @@ function OpdHistoryScreen() {
                         >
                           <Text style={styles.textStyle}>ปิดหน้าต่าง</Text>
                         </Pressable>
+                        
                       </View>
                     </View>
                   </Modal>
           </>
         )}
+        </ScrollView>
       </View>
     </View>
   </Modal>

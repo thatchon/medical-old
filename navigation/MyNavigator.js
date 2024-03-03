@@ -26,7 +26,10 @@ import OpdHistoryScreen from '../screens/AddHistoryScreen/OpdHistoryScreen'
 import ActivityHistoryScreen from '../screens/AddHistoryScreen/ActivityHistoryScreen';
 import ProcedureHistoryScreen from '../screens/AddHistoryScreen/ProcedureHistoryScreen';
 
+import EditOpdScreen from '../screens/EditScreen/EditOpdScreen'
+import EditProcedureScreen from '../screens/EditScreen/EditProcedureScreen';
 import ResetPasswordScreen from '../screens/ResetPasswordScreen'
+
 // สร้าง Stack Navigator สำหรับหน้า Login และ Home
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -126,7 +129,7 @@ function MainTabNavigator() {
           headerRight: () => <ActivityHeaderRight navigation={navigation} />
         })} />
 
-      {role !== "teacher" && (
+      {role == "teacher" && (
           <Tab.Screen 
               name="รายงานผล" 
               component={ReportScreen}
@@ -270,6 +273,19 @@ function MyNavigator() {
             fontWeight: 'bold',
           },
         }} />
+
+        <Stack.Screen name="EditOpd" component={EditOpdScreen} options={{
+          title: 'แก้ไขข้อมูลผู้ป่วยนอก',
+          headerStyle: {
+            backgroundColor: '#7274AE',
+          },
+          headerTintColor: '#fff',
+          headerTitleAlign: 'center',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
+        }} />
+        
         <Stack.Screen name="OpdHistory" component={OpdHistoryScreen} options={{
           title: 'ประวัติผู้ป่วยนอก',
           headerStyle: {
@@ -316,6 +332,19 @@ function MyNavigator() {
             fontWeight: 'bold',
           },
         }} />
+
+        <Stack.Screen name="EditProcedure" component={EditProcedureScreen} options={{
+          title: 'แก้ไขข้อมูลหัตถการ',
+          headerStyle: {
+            backgroundColor: '#7274AE',
+          },
+          headerTintColor: '#fff',
+          headerTitleAlign: 'center',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
+        }} />
+
         <Stack.Screen name="ProcedureHistory" component={ProcedureHistoryScreen} options={{
           title: 'ประวัติหัตถการ',
           headerStyle: {
