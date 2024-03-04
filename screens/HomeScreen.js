@@ -2,6 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { clearUser } from '../redux/action';
+import { db } from '../data/firebaseDB'
+import { getDocs, collection, query, where } from "firebase/firestore";
+import { Pie } from "react-chartjs-2";
+import {Chart, ArcElement, Tooltip, Legend} from 'chart.js'
+Chart.register(ArcElement, Tooltip, Legend);
+import SubHeader from '../component/SubHeader';  
 
 const HomeScreen = ({ navigation }) => {
   const user = useSelector((state) => state.user);
@@ -9,7 +15,8 @@ const HomeScreen = ({ navigation }) => {
   const dispatch = useDispatch();
 
   const [dimensions, setDimensions] = useState(Dimensions.get('window'));
-
+  const [caseData, setCaseData] = useState([]);
+  
   useEffect(() => {
     const onChange = ({ window }) => {
       setDimensions(window);
@@ -19,50 +26,108 @@ const HomeScreen = ({ navigation }) => {
     return () => Dimensions.removeEventListener('change', onChange);
   }, []);
 
-  const isLandscape = dimensions.width > dimensions.height;
-
-  const responsiveWidth = isLandscape ? dimensions.width * 0.5 : dimensions.width * 0.9;
-  const responsiveHeight = isLandscape ? dimensions.height * 0.5 : dimensions.height * 0.7;
-  const imageDimension = isLandscape ? dimensions.width * 0.15 : dimensions.width * 0.3;
-
   // ปรับขนาดตัวอักษรตามขนาดหน้าจอ
-  const textSize = dimensions.width < 400 ? 24 : (dimensions.width < 600 ? 24 : 30);
-  const buttonTextSize = dimensions.width < 400 ? 24 : (dimensions.width < 600 ? 24 : 28);
+  const textSize = dimensions.width < 768 ? 20 : 24;
+  const buttonTextSize = dimensions.width < 768 ? 20 : 24;
 
   const handleLogout = () => {
     dispatch(clearUser());
     navigation.navigate('SelectRole');
   };
 
+  useEffect(() => {
+    // ดึงข้อมูลจาก Firebase และตั้งค่าข้อมูลสำหรับ Pie Chart
+    fetchDataForPieChart();
+  }, []);
+
+  const fetchDataForPieChart = async () => {
+    try {
+      // ใช้ Firebase SDK เพื่อดึงข้อมูลจาก Firebase
+      // สามารถใช้ Firebase Firestore, Realtime Database, หรือ Cloud Functions ตามที่ต้องการ
+      // นี่คือตัวอย่างเพียงแค่เริ่มต้น โปรดแก้ไขตามโครงสร้างของฐานข้อมูลของคุณ
+      const patientsRef = collection(db, 'patients');
+  
+      // Query ข้อมูลเฉพาะที่มี status เป็น 'Approved'
+      const approvedQuerySnapshot = await getDocs(query(patientsRef, where('status', '==', 'approved')));
+  
+      // Query ข้อมูลเฉพาะที่มี status เป็น 'Rejected'
+      const rejectedQuerySnapshot = await getDocs(query(patientsRef, where('status', '==', 'rejected')));
+  
+      // Query ข้อมูลเฉพาะที่มี status เป็น 'Pending'
+      const pendingQuerySnapshot = await getDocs(query(patientsRef, where('status', '==', 'pending')));
+  
+      // นับจำนวนเคสแต่ละสถานะ
+      let approvedCases = approvedQuerySnapshot.size;
+      let rejectedCases = rejectedQuerySnapshot.size;
+      let pendingCases = pendingQuerySnapshot.size;
+  
+      // ตั้งค่าข้อมูลสำหรับ Pie Chart
+      const data = {
+        labels: ['Approved', 'Rejected', 'Pending'],
+        datasets: [
+          {
+            data: [approvedCases, rejectedCases, pendingCases],
+            backgroundColor: ['green', 'red', 'yellow'],
+          },
+        ],
+      };
+      console.log('Case Data:', data);
+      setCaseData(data);
+    } catch (error) {
+      console.error('เกิดข้อผิดพลาดในการดึงข้อมูล:', error);
+    }
+  };
+
+  const options = {
+    maintainAspectRatio: false,
+    legend: {
+      display: true,
+      position: 'right',
+      labels: {
+        font: {
+          size: textSize
+        }
+      }
+    },
+    tooltips: {
+      enabled: true,
+      callbacks: {
+        label: function(tooltipItem, data) {
+          const label = data.labels[tooltipItem.index];
+          const value = data.datasets[0].data[tooltipItem.index];
+          return `${label}: ${value}`;
+        }
+      }
+    }
+  };
+
   return (
     <View style={styles.container}>
-      <View style={[styles.newBox, { width: responsiveWidth, height: responsiveHeight }]}>
-        <Image
-          style={[styles.image, { width: imageDimension, height: imageDimension }]}
-          source={require("../assets/doctor.png")}
-          resizeMode={"contain"}
-        />
-        <Text style={[styles.text, { fontSize: textSize }]}>{user.displayName}</Text>
-        <Text style={{ fontSize: textSize, color: '#00046D' }}>{role === 'student' ? 'นักศึกษาแพทย์' : role === 'teacher' ? 'อาจารย์แพทย์' : role}</Text>
-        {role === 'teacher' && (
-          <Text style={{ fontSize: textSize, color: '#00046D' }}>Department: [{user.department}]</Text>
-        )}
+      <View style={{marginTop: 20}}>
+        <SubHeader text="Home Page" />
       </View>
-      <View style={styles.bottomBox}>
-        {role !== 'teacher' && (
-          <TouchableOpacity
-            style={[styles.button, styles.portfolioButton]}
-            onPress={() => navigation.navigate('Portfolio')}
-          >
-            <Text style={[styles.buttonText, { fontSize: buttonTextSize }]}>My Portfolio</Text>
-          </TouchableOpacity>
-        )}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-evenly', marginVertical: 10 }}>
+        <Image source={require('../assets/logo.png')} style={{ width: 150, height: 150, marginTop: 20 }} resizeMode="contain" />
+        <View style={{ flexDirection: 'column', justifyContent: 'center' }}>
+          <Text style={[styles.text, { fontSize: textSize }]}>{user.displayName}</Text>
+          <Text style={[styles.text, { fontSize: textSize }]}>Role : {user.role}</Text>
+          <Text style={{ fontSize: textSize, color: 'black', fontWeight: 'bold' }}>Department : [{user.department}]</Text>
+        </View>
         <TouchableOpacity
           style={[styles.button, styles.logoutButton]}
           onPress={handleLogout}
         >
           <Text style={[styles.buttonText, { fontSize: buttonTextSize }]}>Logout</Text>
         </TouchableOpacity>
+      </View>
+      <View style={styles.line} />
+
+      <Text style={[styles.text, { fontSize: textSize, alignSelf: 'center', textAlign: 'center', marginTop: 20 }]}>Report Chart</Text>
+
+      <View style={{ alignItems: 'center', marginTop: 20 }}>
+        
+      {caseData && caseData.datasets && <Pie data={caseData} options={options} width={500} height={500} />}
+
       </View>
     </View>
   );
@@ -71,44 +136,37 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     backgroundColor: 'white'
   },
-  newBox: {
-    justifyContent: 'center',
-    backgroundColor: '#FAFAFA',
-    alignItems: 'center',
-    borderRadius: 8
-  },
   text: {
-    color: '#00046D',
+    color: 'black',
     fontWeight: 'bold',
-    marginTop: 20
+  },
+  line: {
+    height: 2,
+    width: '100%',
+    backgroundColor: '#FE810E',
+    marginHorizontal: 15,
   },
   button: {
-    height: 63,
-    width: 216,
+    height: 41,
+    width: 130,
     justifyContent: 'center',
+    alignSelf: 'center',
     alignItems: 'center',
-    borderRadius: 30,
+    borderRadius: 5,
     marginBottom: 10
-  },
-  portfolioButton: {
-    backgroundColor: '#05AB9F',
   },
   logoutButton: {
     backgroundColor: 'red',
-  },
-  image: {
-    marginBottom: 10
   },
   bottomBox: {
     marginTop: 20,
     alignItems: 'center'
   },
   buttonText: {
-    color: 'white'
+    color: 'white',
+    textAlign: 'center'
   }
 });
 

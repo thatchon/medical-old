@@ -44,15 +44,17 @@ function MainTabNavigator() {
     <Tab.Navigator
     screenOptions={{
       tabBarLabelPosition: isMobile ? 'below-icon' : 'beside-icon',
-      tabBarStyle: { backgroundColor: 'rgba(34,36,40,1)' },
+      tabBarStyle: { backgroundColor: '#FE810E' },
     }}
   >
       <Tab.Screen name="หน้าหลัก" component={HomeScreen}
         options={{
           headerShown: false,
-          title: 'หน้าหลัก',
+          title: 'Home',
+          tabBarActiveTintColor: 'white',
+          tabBarInactiveTintColor: 'grey',
           tabBarIcon: ({ focused, color, size }) => (
-            <MaterialCommunityIcons name="home-variant" size={24} color={focused ? '#007BFF' : 'white'} />
+            <MaterialCommunityIcons name="home-variant" size={24} color={focused ? 'white' : 'grey'} />
           ),
         }} />
 
@@ -60,8 +62,12 @@ function MainTabNavigator() {
           name="ผู้ป่วยใน"
           component={IpdScreen}
           options={({ navigation }) => ({
+            headerShown: false,
+            title: 'IPD',
+            tabBarActiveTintColor: 'white',
+            tabBarInactiveTintColor: 'grey',
             tabBarIcon: ({ focused, color, size }) => (
-              <FontAwesome5 name="file-medical" size={24} color={focused ? '#007BFF' : 'white'} />
+              <FontAwesome5 name="file-medical" size={24} color={focused ? 'white' : 'grey'} />
             ),
             headerStyle: {
               backgroundColor: '#7274AE',
@@ -79,8 +85,12 @@ function MainTabNavigator() {
         name="ผู้ป่วยนอก" 
         component={OpdScreen}
         options={({ navigation }) => ({
+          headerShown: false,
+          title: 'OPD',
+          tabBarActiveTintColor: 'white',
+          tabBarInactiveTintColor: 'grey',
           tabBarIcon: ({ focused, color, size }) => (
-            <FontAwesome5 name="file-medical-alt" size={24} color={focused ? '#007BFF' : 'white'} />
+            <FontAwesome5 name="file-medical-alt" size={24} color={focused ? 'white' : 'grey'} />
           ),
           headerStyle: {
             backgroundColor: '#7274AE',
@@ -97,8 +107,12 @@ function MainTabNavigator() {
         name="หัตถการ" 
         component={ProcedureScreen}
         options={({ navigation }) => ({
+          headerShown: false,
+          title: 'Procedure',
+          tabBarActiveTintColor: 'white',
+          tabBarInactiveTintColor: 'grey',
           tabBarIcon: ({ focused, color, size }) => (
-            <FontAwesome5 name="hand-holding-medical" size={24} color={focused ? '#007BFF' : 'white'} />
+            <FontAwesome5 name="hand-holding-medical" size={24} color={focused ? 'white' : 'grey'} />
           ),
           headerStyle: {
             backgroundColor: '#7274AE',
@@ -115,8 +129,12 @@ function MainTabNavigator() {
         name="กิจกรรม" 
         component={ActivityScreen}
         options={({ navigation }) => ({
+          headerShown: false,
+          title: 'Activity',
+          tabBarActiveTintColor: 'white',
+          tabBarInactiveTintColor: 'grey',
           tabBarIcon: ({ focused, color, size }) => (
-            <FontAwesome5 name="pump-medical" size={24} color={focused ? '#007BFF' : 'white'} />
+            <FontAwesome5 name="pump-medical" size={24} color={focused ? 'white' : 'grey'} />
           ),
           headerStyle: {
             backgroundColor: '#7274AE',
@@ -212,6 +230,7 @@ function MyNavigator() {
 
         <Stack.Screen name="Login" component={LoginScreen} options={{
           title: 'เข้าสู่ระบบ',
+          headerShown: false,
           headerStyle: {
             backgroundColor: '#7274AE',
           },
@@ -229,6 +248,7 @@ function MyNavigator() {
 
         <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{
           title: 'เปลี่ยนรหัสผ่าน',
+          headerShown: false,
           headerStyle: {
             backgroundColor: '#7274AE',
           },
@@ -263,6 +283,7 @@ function MyNavigator() {
         }} />
 
         <Stack.Screen name="AddOpd" component={AddOpdScreen} options={{
+          headerShown: false,
           title: 'เพิ่มข้อมูลผู้ป่วยนอก',
           headerStyle: {
             backgroundColor: '#7274AE',

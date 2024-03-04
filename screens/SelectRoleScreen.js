@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { setRole } from '../redux/action'; // ตรงนี้ต้องแก้ import จาก reducers เป็น action
+import Header from '../component/Header';  // แก้ตรงนี้
+import SubHeader from '../component/SubHeader';  // แก้ตรงนี้
+import Footer from '../component/Footer';  // แก้ตรงนี้
 
 const SelectRoleScreen = ({ navigation }) => {
   const [selectedRole, setSelectedRole] = useState(null);
@@ -19,20 +22,25 @@ const SelectRoleScreen = ({ navigation }) => {
     };
   }, []);
 
-  const handleRoleToggle = (role) => {
-    if (selectedRole === role) {
-      setSelectedRole(null);
-    } else {
-      setSelectedRole(role);
-    }
+  const handleRolePress = (role) => {
+    setSelectedRole(role);
+    dispatch(setRole(role));
+    navigation.navigate('Login', { role });
   };
+  // const handleRoleToggle = (role) => {
+  //   if (selectedRole === role) {
+  //     setSelectedRole(null);
+  //   } else {
+  //     setSelectedRole(role);
+  //   }
+  // };
 
-  const handleContinue = () => {
-    if (selectedRole) {
-      dispatch(setRole(selectedRole));
-      navigation.navigate('Login', { role: selectedRole });
-    }
-  };
+  // const handleContinue = () => {
+  //   if (selectedRole) {
+  //     dispatch(setRole(selectedRole));
+  //     navigation.navigate('Login', { role: selectedRole });
+  //   }
+  // };
 
   const fontSizeDynamic = screenWidth < 768 ? 37 : 52;
   const roleButtonTextSize = screenWidth < 768 ? 20 : 48;
@@ -40,90 +48,38 @@ const SelectRoleScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.banner}>
-        <Text style={styles.bannerText}>E-LogBook</Text>
-      </View>
-      <View style={styles.container}>
-        <Text style={[styles.titleText, { fontSize: fontSizeDynamic }]}>เลือกหน้าที่ของคุณ</Text>
+      <Header />
+      <SubHeader text="Please select a role from below to log in." />
 
-        <TouchableOpacity
-          style={[
-            styles.roleButton,
-            {
-              backgroundColor: selectedRole === 'student' ? 'blue' : 'gray',
-            },
-          ]}
-          onPress={() => handleRoleToggle('student')}
-        >
-          <Text
-            style={[
-              styles.roleButtonText,
-              {
-                color: selectedRole === 'student' ? 'white' : '#0500FF',
-              },
-            ]}
-          >
-            นักศึกษาแพทย์
-          </Text>
-        </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.roleButton}
+        onPress={() => handleRolePress('student')}
+      >
+        <Text style={styles.roleButtonText}>
+          Medical student
+        </Text>
+      </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[
-            styles.roleButton,
-            {
-              backgroundColor: selectedRole === 'teacher' ? 'blue' : 'gray',
-            },
-          ]}
-          onPress={() => handleRoleToggle('teacher')}
-        >
-          <Text
-            style={[
-              styles.roleButtonText,
-              {
-                color: selectedRole === 'teacher' ? 'white' : '#0500FF',
-              },
-            ]}
-          >
-            อาจารย์
-          </Text>
+      <TouchableOpacity
+        style={styles.roleButton}
+        onPress={() => handleRolePress('teacher')}
+      >
+        <Text style={styles.roleButtonText}>
+          Professor
+        </Text>
+      </TouchableOpacity>
 
-        </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.roleButton}
+        onPress={() => handleRolePress('staff')}
+      >
+        <Text style={styles.roleButtonText}>
+          Staff
+        </Text>
+      </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[
-            styles.roleButton,
-            {
-              backgroundColor: selectedRole === 'staff' ? 'blue' : 'gray',
-            },
-          ]}
-          onPress={() => handleRoleToggle('staff')}
-        >
-          <Text
-            style={[
-              styles.roleButtonText,
-              {
-                color: selectedRole === 'staff' ? 'white' : '#0500FF',
-              },
-            ]}
-          >
-            เจ้าหน้าที่
-          </Text>
-
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.continueButton,
-            {
-              backgroundColor: selectedRole ? '#05AB9F' : 'gray',
-            },
-          ]}
-          onPress={handleContinue}
-          disabled={!selectedRole}
-        >
-          <Text style={[styles.continueButtonText, { fontSize: continueButtonTextSize }]}>Continue</Text>
-        </TouchableOpacity>
-      </View>
+      <View style={{ flex: 1 }} /> 
+      <Footer />
     </View>
   );
 };
@@ -131,27 +87,13 @@ const SelectRoleScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    flexDirection: 'column',
-    justifyContent: 'between',
-    alignItems: 'center',
-  },
-  banner: {
-    backgroundColor: '#05AB9F', 
-    width: '100%',
-    height: 100, 
     justifyContent: 'center',
     alignItems: 'center',
-    // flex: 1,
-    
   },
-  bannerText: {
-    color: 'white',
-    fontSize: 48,
-    fontWeight: 'bold',
-  },
-  titleText: {
+  titletext: {
     color: 'black',
     fontWeight: 'bold',
+    fontSize: 52,
     padding: 20,
   },
   roleButton: {
@@ -161,9 +103,11 @@ const styles = StyleSheet.create({
     borderRadius: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'orange'
   },
   roleButtonText: {
-    fontSize: 48,
+    fontSize: 24,
+    
   },
   continueButton: {
     height: 63,
@@ -174,6 +118,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
   },
   continueButtonText: {
+    fontSize: 28,
     color: 'white',
   },
 });
