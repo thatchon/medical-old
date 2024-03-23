@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Button, StyleSheet, TouchableOpacity, TextInput, CheckBox, Platform, ScrollView, Dimensions} from "react-native";
+import { View, Text, Button, StyleSheet, TouchableOpacity, TextInput, Platform, ScrollView, Dimensions } from "react-native";
 import { SelectList } from "react-native-dropdown-select-list";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { db, auth, storage } from '../../data/firebaseDB'
@@ -7,26 +7,29 @@ import { getDocs, addDoc, collection, query, where, Timestamp, updateDoc } from 
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import SubHeader from '../../component/SubHeader';  
 
-function AddProcedureScreen({ navigation }) {
-  const [selectedDate, setSelectedDate] = useState(new Date());
+function EditActivityScreen({ route, navigation }) {
+  const { activityData } = route.params;
 
-  const [selectedProcedures, setSelectedProcedures] = useState(""); // State for selected Procedures
-  const [mainProcedure, setMainProcedure] = useState([]); // State to store main Procedure
+  const [selectedDate, setSelectedDate] = useState(activityData.admissionDate.toDate());
 
-  const [hn, setHN] = useState(""); // HN
-  const [remarks, setRemarks] = useState(""); // remarks
+  const [selectedDiagnosis, setSelectedDiagnosis] = useState(activityData.mainDiagnosis || []); // State for selected diagnosis
+  const [mainDiagnoses, setMainDiagnoses] = useState([]); // State to store main diagnoses
+
+  const [professorId, setProfessorId] = useState(activityData.professorId);
+  const [professorName, setProfessorName] = useState(activityData.professorName); // สถานะสำหรับเก็บชื่ออาจารย์ที่ถูกเลือก
+  const [teachers, setTeachers] = useState([]);
+
+  const [activityType, setActivityType] = useState([]);
+  const [selectedActivityType, setSelectedActivityType] = useState(activityData.activityType);
+
+  const [note, setNote] = useState(activityData.note); // Note
   const status = "pending"; // Status
-  const [createBy_id, setCreateById] = useState(null); // User ID
-  const [approvedById, setApprovedById] = useState(null); // สถานะสำหรับเก็บ id ของอาจารย์ที่ถูกเลือก
-  const [approvedByName, setApprovedByName] = useState(null); // สถานะสำหรับเก็บชื่ออาจารย์ที่ถูกเลือก
-  const [teachers, setTeachers] = useState([]); // สถานะสำหรับเก็บรายการอาจารย์ทั้งหมด
-  const [procedureLevel, setProcedureLevel] = useState(0);
   const [date, setDate] = useState(new Date());
   const [show, setShow] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
 
-  const [selectedHour, setSelectedHour] = useState("");
-  const [selectedMinute, setSelectedMinute] = useState("");
+  const [selectedHour, setSelectedHour] = useState(activityData.hours.toString());
+  const [selectedMinute, setSelectedMinute] = useState(activityData.minutes.toString());
 
   const [uploadedImages, setUploadedImages] = useState([]);
 
@@ -51,17 +54,6 @@ function AddProcedureScreen({ navigation }) {
       alignItems: "left",
       justifyContent: "left",
       paddingHorizontal: dimensions.width < 768 ? 10 : 30,
-    },
-    checkboxContainerStyle: {
-      flexDirection: 'row', 
-      alignItems: 'center', 
-      marginVertical: 10
-    },
-    previewImage: {
-      width: 100,
-      height: 100,
-      margin: 5,
-      borderRadius: 5,
     },
     uploadContainer: {
       marginBottom: 16,
@@ -115,7 +107,7 @@ function AddProcedureScreen({ navigation }) {
   const uploadImages = async (uploadedImages, docId) => {
     const storageURLs = [];
     const uploadPromises = uploadedImages.map(async (image) => {
-      const imageRef = ref(storage, `procedures_images/${docId}/${image.name}`);
+      const imageRef = ref(storage, `activity_images/${docId}/${image.name}`);
       await uploadBytes(imageRef, image);
       const downloadURL = await getDownloadURL(imageRef);
       storageURLs.push(downloadURL);
@@ -173,38 +165,39 @@ function AddProcedureScreen({ navigation }) {
     }
   };
 
+
   const onSelectTeacher = (selectedTeacherId) => {
     const selectedTeacher = teachers.find(teacher => teacher.key === selectedTeacherId);
     // console.log(selectedTeacher)
     if (selectedTeacher) {
-        setApprovedByName(selectedTeacher.value);
-        setApprovedById(selectedTeacher.key);
+      setProfessorName(selectedTeacher.value);
+      setProfessorId(selectedTeacher.key);
     } else {
-        console.error('Teacher not found:', selectedTeacherId);
+      console.error('Teacher not found:', selectedTeacherId);
     }
-}
-  
+  }
+
   useEffect(() => {
-    async function fetchMainProcedure() {
+    async function fetchMainDiagnoses() {
       try {
-        const procedureTypeRef = collection(db, "procedures_type");
-        const querySnapshot = await getDocs(procedureTypeRef);
+        const mainDiagnosisRef = collection(db, "mainDiagnosis");
+        const querySnapshot = await getDocs(mainDiagnosisRef);
   
-        const Procedure = [];
+        const diagnoses = [];
         querySnapshot.forEach((doc) => {
           const data = doc.data();
-          data.procedureType.forEach((disease) => {
-            Procedure.push({ key: disease, value: disease });
+          data.diseases.forEach((disease) => {
+            diagnoses.push({ key: disease, value: disease });
           });
         });
   
-        setMainProcedure(Procedure);
+        setMainDiagnoses(diagnoses);
       } catch (error) {
-        console.error("Error fetching main Procedure:", error);
+        console.error("Error fetching main diagnoses:", error);
       }
     }
   
-    fetchMainProcedure();
+    fetchMainDiagnoses();
   }, []);
 
   useEffect(() => {
@@ -212,34 +205,57 @@ function AddProcedureScreen({ navigation }) {
       try {
         const teacherRef = collection(db, "users");
         const q = query(teacherRef, where("role", "==", "teacher")); // ใช้ query และ where ในการ filter
-  
+
         const querySnapshot = await getDocs(q); // ใช้ query ที่ถูก filter ในการ getDocs
-        
+
         const teacherArray = [];
         querySnapshot.forEach((doc) => {
           const data = doc.data();
           teacherArray.push({ key: doc.id, value: data.displayName });
         });
-  
+
         setTeachers(teacherArray); // ตั้งค่ารายการอาจารย์
       } catch (error) {
         console.error("Error fetching teachers:", error);
       }
     }
-  
+
     fetchTeachers(); // เรียกฟังก์ชันเพื่อดึงข้อมูลอาจารย์
+  }, []);
+
+  useEffect(() => {
+    async function fetchActivityType() {
+      try {
+        const activityTypeRef = collection(db, "activity_type");
+        const querySnapshot = await getDocs(activityTypeRef);
+  
+        const activityArray = [];
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          data.activityType.forEach((activity) => {
+            activityArray.push({ key: activity, value: activity });
+          });
+        });
+  
+        setActivityType(activityArray);
+      } catch (error) {
+        console.error("Error fetching activity:", error);
+      }
+    }
+  
+    fetchActivityType();
   }, []);
 
   const saveDataToFirestore = async () => {
     try {
 
-      if (!selectedProcedures) {
-        alert("โปรดเลือกประเภท");
+      if (!selectedDiagnosis) {
+        alert("โปรดกรอก Main Diagnosis");
         return;
       }
       
-      if (!hn) {
-        alert("โปรดกรอก HN");
+      if (!selectedActivityType) {
+        alert("โปรดเลือกประเภท");
         return;
       }
   
@@ -248,61 +264,45 @@ function AddProcedureScreen({ navigation }) {
         return;
       }
 
-      if (!approvedByName) {
+      if (!professorName) {
         alert("โปรดเลือกอาจารย์");
         return;
       }
 
-      if (!procedureLevel) {
-        alert("โปรดเลือกเลเวล");
-        return;
-      }
       // if (uploadedImages.length === 0) {
       //   alert("กรุณาเลือกรูปภาพก่อนทำการบันทึก");
       //   return;
       // }
-
+      // Get the currently authenticated user
       const user = auth.currentUser;
       if (!user) {
         alert("ไม่พบข้อมูลผู้ใช้");
         return;
       }
   
-      const timestamp = Timestamp.fromDate(selectedDate);
-  
       // Step 1: Save patient data (excluding images) and retrieve the Document ID
-      const docRef = await addDoc(collection(db, "procedures"), {
-        admissionDate: timestamp,
-        createBy_id: user.uid,
-        hn: hn,
-        procedureType: selectedProcedures,
-        remarks: remarks,
-        approvedByName: approvedByName,
-        status: status,
-        approvedById: approvedById,
-        procedureLevel: procedureLevel,
+      const docRef = doc(db, "activity", activityData.id);
+      await updateDoc(docRef, {
+        admissionDate: Timestamp.fromDate(new Date(selectedDate)),
+        activityType: selectedActivityType, // Activity
+        createBy_id: user.uid, // User ID
+        mainDiagnosis: selectedDiagnosis,
+        note: note, // Note
+        professorName: teachers.find(t => t.key === professorId)?.value,
+        professorId: professorId,
         images: [], // We'll store the image URLs in the next step
-        hours: selectedHour,
-        minutes: selectedMinute
+        hours: parseInt(selectedHour),
+        minutes: parseInt(selectedMinute)
       });
   
       // Step 2: Use the Document ID as a folder name for image uploads and then update image URLs in Firestore
       const imageUrls = await uploadImages(uploadedImages, docRef.id);
       await updateDoc(docRef, { images: imageUrls });
   
-      // Clear the input fields and states
-      setHN("");
-      setSelectedDate(new Date());
-      setSelectedProcedures("");
-      setRemarks("");
-      setProcedureLevel(null);
-      setSelectedHour("");
-      setSelectedMinute("");
-  
-      alert("บันทึกข้อมูลสำเร็จ");
+      alert("อัปเดตข้อมูลสำเร็จ");
     } catch (error) {
       console.error("Error adding document: ", error);
-      alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+      alert("เกิดข้อผิดพลาดในการอัปเดตข้อมูล");
     }
   };
 
@@ -310,79 +310,82 @@ function AddProcedureScreen({ navigation }) {
     <ScrollView>
       <View style={styles.container}>
 
-      <View style={{marginVertical: dimensions.width < 768 ? 40 : 60,}}>
-        <SubHeader text="ADD PROCEDURE" />
-      </View>
-
-      <View style={{ flexDirection: dimensions.width < 768 ? 'column' : 'row', alignItems: 'left', marginBottom: 16, justifyContent: 'space-between' }}>
-        <View style={{ width: dimensions.width < 768 ? '100%' : '45%' }}>
-          <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left' }}>Procedure Admission Date</Text>
-          <DateInput />
+        <View style={{marginVertical: dimensions.width < 768 ? 40 : 60,}}>
+          <SubHeader text="EDIT ACTIVITY" />
         </View>
-        <View style={{ width: dimensions.width < 768 ? '100%' : '45%', flexDirection: 'row', justifyContent: 'left', alignItems: 'left' }}>
-          <View>
-            <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left' }}>Procedure Admission Time</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'left' }}>
-              <SelectList
-                setSelected={setSelectedHour}
-                data={hours}
-                placeholder="Hours"
-                search={false}
-                boxStyles={{ width: 'auto', backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10 }}
-                dropdownStyles={{ backgroundColor: '#FEF0E6' }}
-              />
-              <Text style={{ marginHorizontal: 5, alignSelf: 'center' }}>:</Text>
-              <SelectList
-                setSelected={setSelectedMinute}
-                data={minutes}
-                placeholder="Minutes"
-                search={false}
-                boxStyles={{ width: 'auto', backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10  }}
-                dropdownStyles={{ backgroundColor: '#FEF0E6' }}
-              />
-            </View>
+
+        <View style={{ flexDirection: dimensions.width < 768 ? 'column' : 'row', alignItems: 'left', marginBottom: 16, justifyContent: 'space-between' }}>
+          <View style={{ width: dimensions.width < 768 ? '100%' : '45%' }}>
+            <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left' }}>Activity Date</Text>
+            <DateInput />
           </View>
+          <View style={{ width: dimensions.width < 768 ? '100%' : '45%', flexDirection: 'row', justifyContent: 'left', alignItems: 'left' }}>
+            <View>
+              <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left' }}>Activity Time</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'left' }}>
+                <SelectList
+                  setSelected={setSelectedHour}
+                  defaultOption={{ key: selectedHour, value: selectedHour }}
+                  data={hours}
+                  placeholder="Hours"
+                  search={false}
+                  boxStyles={{ width: 'auto', backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10 }}
+                  dropdownStyles={{ backgroundColor: '#FEF0E6' }}
+                />
+                <Text style={{ marginHorizontal: 5, alignSelf: 'center' }}>:</Text>
+                <SelectList
+                  setSelected={setSelectedMinute}
+                  defaultOption={{ key: selectedMinute, value: selectedMinute }}
+                  data={minutes}
+                  placeholder="Minutes"
+                  search={false}
+                  boxStyles={{ width: 'auto', backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10  }}
+                  dropdownStyles={{ backgroundColor: '#FEF0E6' }}
+                />
+              </View>
+            </View>
         </View>
       </View>
 
       <View style={{ flexDirection: dimensions.width < 768 ? 'column' : 'row', justifyContent: 'space-between', marginBottom: 16 }}>
         <View style={{ width: dimensions.width < 768 ? '100%' : '45%' }}>
-          <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left', alignItems: 'flex-start' }}>HN</Text>
-            <View style={{
-              height: 48,
-              borderColor: '#FEF0E6',
-              borderWidth: 1,
-              borderRadius: 10,
-              alignItems: 'left',
-              justifyContent: 'left',
-            }}>
-              <TextInput
-                placeholder="Fill the hospital number"
-                placeholderTextColor="grey"
-                value={hn}
-                onChangeText={setHN}
-                style={{
-                  width: '100%',
-                  textAlign: 'center',
-                  height: '100%',
-                  fontSize: 20,
-                  backgroundColor: '#FEF0E6'
-                }}
-              />
-            </View>
+          <Text style={{
+            fontSize: 20,
+            fontWeight: 400,
+            marginVertical: 8,
+            textAlign: 'left'
+
+          }}>Activity Type</Text>
+          <SelectList
+            setSelected={setSelectedActivityType}
+            defaultOption={{ key: selectedActivityType, value: selectedActivityType }}
+            data={activityType}
+            placeholder={"Select activity type"}
+            boxStyles={{ width: 'auto', backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10  }}
+            dropdownStyles={{ backgroundColor: '#FEF0E6' }}
+          />
         </View>
+
         <View style={{ width: dimensions.width < 768 ? '100%' : '45%' }}>
-          <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left', alignItems: 'flex-start' }}>Approver</Text>
+          <Text style={{
+            fontSize: 20, 
+            fontWeight: 400,
+            marginVertical: 8, 
+            textAlign: 'left', 
+            alignItems: 'flex-start' 
+            
+            }}>Professor</Text>
             <SelectList
               setSelected={onSelectTeacher}
+              defaultOption={{  key: professorId, value: professorName }}
               data={teachers}
               placeholder={"Select the professor name"}
               placeholderTextColor="grey"
               boxStyles={{ width: 'auto', backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10  }}
               dropdownStyles={{ backgroundColor: '#FEF0E6' }}
             />
+        </View>
       </View>
-    </View>
 
         <View style={{ marginBottom: 16, width: '70%' }}>
           <Text style={{
@@ -391,63 +394,40 @@ function AddProcedureScreen({ navigation }) {
             marginVertical: 8,
             textAlign: 'left'
 
-          }}>Procedure</Text>
+          }}>Topic</Text>
           <SelectList
-            setSelected={setSelectedProcedures}
-            data={mainProcedure}
-            placeholder={"Select a procedure"}
+            setSelected={setSelectedDiagnosis}
+            defaultOption={{ key: selectedDiagnosis, value: selectedDiagnosis }}
+            data={mainDiagnoses}
+            placeholder={"เลือกการวินิฉัย"}
             boxStyles={{ width: 'auto', backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10  }}
             dropdownStyles={{ backgroundColor: '#FEF0E6' }}
           />
         </View>
 
-        <View style={{ marginBottom: 16, width: '70%' }}>
-          <Text style={{
-              fontSize: 20,
-              fontWeight: 400,
-              marginVertical: 8,
-              textAlign: 'left'
-
-            }}>Level</Text>
-
-            <View style={{ flexDirection: dimensions.width < 768 ? 'column' : 'row', justifyContent: 'space-between', width: '100%'}}>
-              <View style={styles.checkboxContainerStyle}>
-                <CheckBox value={procedureLevel === 1} onValueChange={() => setProcedureLevel(1)} />
-                <Text style={{ marginLeft: 5, fontSize: 20 }}>Observe</Text>
-              </View>
-              <View style={styles.checkboxContainerStyle}>
-                <CheckBox value={procedureLevel === 2} onValueChange={() => setProcedureLevel(2)} />
-                <Text style={{ marginLeft: 5, fontSize: 20 }}>Assist</Text>
-              </View>
-              <View style={styles.checkboxContainerStyle}>
-                <CheckBox value={procedureLevel === 3} onValueChange={() => setProcedureLevel(3)} />
-                <Text style={{ marginLeft: 5, fontSize: 20 }}>Perform</Text>
-              </View>
-            </View>
-        </View>
-
         <View style={{ marginBottom: 16, width: '70%', }}>
-            <Text style={{
-              fontSize: 20,
-              fontWeight: 400,
-              marginVertical: 8,
-              textAlign: 'left'
+          <Text style={{
+            fontSize: 20,
+            fontWeight: 400,
+            marginVertical: 8,
+            textAlign: 'left'
 
-            }}>Note / Reflection (optional)</Text>
-          <View style={{
-            height: 260,
-            borderColor: '#FEF0E6',
-            borderWidth: 1,
-            borderRadius: 10,
-            backgroundColor: '#FEF0E6'
-          }}>
-            <TextInput
-              placeholder={isFocused ? '' : "Fill a note/reflection"}
-              placeholderTextColor="grey"
-              onFocus={() => setIsFocused(true)}
-              value={remarks}
-              onChangeText={setRemarks}
-              multiline
+          }}>Note / Reflection (optional)</Text>
+        <View style={{
+          height: 260,
+          borderColor: '#FEF0E6',
+          borderWidth: 1,
+          borderRadius: 10,
+          backgroundColor: '#FEF0E6'
+        }}>
+          <TextInput
+                placeholder={isFocused ? '' : "Fill a note/reflection"}
+                placeholderTextColor="grey"
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(note.length > 0)}
+                value={note}
+                onChangeText={setNote}
+                multiline
                 style={{
                   width: '100%',
                   height: '100%',
@@ -457,21 +437,21 @@ function AddProcedureScreen({ navigation }) {
                   paddingLeft: 8, // พิจารณาเพิ่ม padding ด้านซ้าย
                   fontSize: 20
                 }}
-            ></TextInput>
+          ></TextInput>
           </View>
         </View>
 
     {/* UI for image upload */}
-      <View style={styles.uploadContainer}>
+    <View style={styles.uploadContainer}>
         <Text style={styles.uploadTitle}>
-          Upload Images ( Unable to support files larger than 5 MB.)  
-            (Optinal)</Text>
+          Upload Image ( Unable to support files larger than 5 MB.)
+(Optional)</Text>
         <View style={styles.dropzone}>
           <input type="file" accept="image/*" multiple onChange={selectImages} />
         </View>
       </View>
 
-      <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: '10%' }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: '20%' }}>
         <TouchableOpacity
             onPress={saveDataToFirestore}
             style={{
@@ -519,7 +499,7 @@ function AddProcedureScreen({ navigation }) {
         </View>
       </View>
     </ScrollView>
-  );
-}
+    );
+  }
 
-export default AddProcedureScreen;
+export default EditActivityScreen;

@@ -107,7 +107,17 @@ const LoginScreen = ({ route, navigation }) => {
       <Header />
       <SubHeader text={roleText} />
 
-      <Image source={require('../assets/logo.png')} style={{ width: 300, height: 300, alignSelf: 'center', marginTop: 20 }} resizeMode="contain" />
+      <Image
+          source={
+            role === 'student'
+              ? require('../assets/student.png')
+              : role === 'teacher'
+              ? require('../assets/professor.png')
+              : require('../assets/staff.png')
+          }
+          style={{ width: 300, height: 300, alignSelf: 'center', marginTop: 20 }}
+          resizeMode="contain"
+        />
       <View style={{alignItems: 'center'}}>
         <Text style={{ fontSize: emailFontSize, alignSelf: 'flex-start', marginLeft: marginLeftTest, marginBottom: 10, marginTop: 10 }}>Email</Text>
         <TextInput

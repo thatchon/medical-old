@@ -9,7 +9,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { FontAwesome, AntDesign } from "@expo/vector-icons";
 import SubHeader from '../../component/SubHeader';  
 
-function EditOpdScreen({ route, navigation }) {
+function EditIpdScreen({ route, navigation }) {
   const { patientData } = route.params;
 
   const [selectedDate, setSelectedDate] = useState(patientData.admissionDate.toDate());
@@ -226,12 +226,12 @@ const removeDiagnosis = (index) => {
 
       <View style={{ flexDirection: dimensions.width < 768 ? 'column' : 'row', alignItems: 'left', marginBottom: 16, justifyContent: 'space-between' }}>
         <View style={{ width: dimensions.width < 768 ? '100%' : '45%' }}>
-          <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left' }}>OPD Admission Date</Text>
+          <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left' }}>Ipd Admission Date</Text>
           <DateInput />
         </View>
         <View style={{ width: dimensions.width < 768 ? '100%' : '45%', flexDirection: 'row', justifyContent: 'left', alignItems: 'left' }}>
           <View>
-            <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left' }}>OPD Admission Time</Text>
+            <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left' }}>Ipd Admission Time</Text>
             <View style={{ flexDirection: 'row', alignItems: 'left' }}>
               <SelectList
                 setSelected={setSelectedHour}
@@ -490,4 +490,4 @@ const removeDiagnosis = (index) => {
   );
 }
 
-export default EditOpdScreen;
+export default EditIpdScreen;

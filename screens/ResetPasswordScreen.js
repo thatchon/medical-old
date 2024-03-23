@@ -25,12 +25,12 @@ const ResetPasswordScreen = ({ navigation }) => {
   const handleSendResetLink = () => {
     // ตรวจสอบว่าอีเมลว่างหรือไม่
     if (email.trim() === '') {
-      setErrorMessage('กรุณากรอกอีเมล');
+      setErrorMessage('Please enter your email.');
       return;
     }
     // ตรวจสอบ format ของอีเมล
     if (!validator.isEmail(email)) {
-      setErrorMessage('กรุณากรอกอีเมลในรูปแบบที่ถูกต้อง');
+      setErrorMessage('Please enter your email in the correct format.');
       return;
     }
 
@@ -42,7 +42,7 @@ const ResetPasswordScreen = ({ navigation }) => {
       })
       .catch((error) => {
         setIsResetSuccessful(false);
-        setErrorMessage('ไม่สามารถส่งลิงก์รีเซ็ตรหัสผ่าน: ' + error.message);
+        setErrorMessage('Unable to send password reset link: ' + error.message);
       });
   };
 

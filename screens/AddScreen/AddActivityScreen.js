@@ -5,8 +5,9 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { db, auth, storage } from '../../data/firebaseDB'
 import { getDocs, addDoc, collection, query, where, Timestamp, updateDoc } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import SubHeader from '../../component/SubHeader';  
 
-function AddActivityScreen() {
+function AddActivityScreen({ navigation }) {
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   const [selectedDiagnosis, setSelectedDiagnosis] = useState(""); // State for selected diagnosis
@@ -48,18 +49,18 @@ function AddActivityScreen() {
     container: {
       flexGrow: 1,
       backgroundColor: "#fff",
-      alignItems: "center",
-      justifyContent: "center",
+      alignItems: "left",
+      justifyContent: "left",
       paddingHorizontal: dimensions.width < 768 ? 10 : 30,
     },
     uploadContainer: {
       marginBottom: 16,
     },
     uploadTitle: {
-      fontSize: 24,
+      fontSize: 20,
       fontWeight: '400',
       marginVertical: 8,
-      textAlign: 'center'
+      textAlign: 'left'
     },
     dropzone: {
       height: 50,
@@ -132,7 +133,12 @@ function AddActivityScreen() {
           style={{
             marginTop: 5,
             padding: 10,
-            fontSize: 16
+            fontSize: 16,
+            width: "95%",
+            backgroundColor: '#FEF0E6',
+            borderColor: '#FEF0E6',
+            borderWidth: 1,
+            borderRadius: 10,
           }}
           value={selectedDate.toISOString().substr(0, 10)}
           onChange={(event) => setSelectedDate(new Date(event.target.value))}
@@ -308,109 +314,117 @@ function AddActivityScreen() {
     }
   };
 
-
-
-
   return (
     <ScrollView>
       <View style={styles.container}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-          <View style={{ flex: 1, marginRight: 10 }}>
-            <Text style={{ fontSize: 24,
-            fontWeight: 400,
-            marginVertical: 8,
-            textAlign: 'center' }}>วันที่ทำกิจกรรม</Text>
-            <DateInput />
-          </View>
-          <View style={{ flex: 1, marginRight: 10}}>
-            <Text style={{ fontSize: 24,
-            fontWeight: 400,
-            marginVertical: 8,
-            textAlign: 'center' }}>ชั่วโมง</Text>
-            <SelectList
-              setSelected={setSelectedHour}
-              data={hours}
-              placeholder="เลือกชั่วโมง"
-              search={false}
-              boxStyles={{width: 'auto'}}
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 24,
-            fontWeight: 400,
-            marginVertical: 8,
-            textAlign: 'center' }}>นาที</Text>
-            <SelectList
-              setSelected={setSelectedMinute}
-              data={minutes}
-              placeholder="เลือกนาที"
-              search={false}
-              boxStyles={{width: 'auto'}}
-            />
-          </View>
+
+        <View style={{marginVertical: dimensions.width < 768 ? 40 : 60,}}>
+          <SubHeader text="ADD ACTIVITY" />
         </View>
 
-        <View style={{ marginBottom: 12 }}>
+        <View style={{ flexDirection: dimensions.width < 768 ? 'column' : 'row', alignItems: 'left', marginBottom: 16, justifyContent: 'space-between' }}>
+          <View style={{ width: dimensions.width < 768 ? '100%' : '45%' }}>
+            <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left' }}>Activity Date</Text>
+            <DateInput />
+          </View>
+          <View style={{ width: dimensions.width < 768 ? '100%' : '45%', flexDirection: 'row', justifyContent: 'left', alignItems: 'left' }}>
+            <View>
+              <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left' }}>Activity Time</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'left' }}>
+                <SelectList
+                  setSelected={setSelectedHour}
+                  data={hours}
+                  placeholder="Hours"
+                  search={false}
+                  boxStyles={{ width: 'auto', backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10 }}
+                  dropdownStyles={{ backgroundColor: '#FEF0E6' }}
+                />
+                <Text style={{ marginHorizontal: 5, alignSelf: 'center' }}>:</Text>
+                <SelectList
+                  setSelected={setSelectedMinute}
+                  data={minutes}
+                  placeholder="Minutes"
+                  search={false}
+                  boxStyles={{ width: 'auto', backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10  }}
+                  dropdownStyles={{ backgroundColor: '#FEF0E6' }}
+                />
+              </View>
+            </View>
+        </View>
+      </View>
+
+      <View style={{ flexDirection: dimensions.width < 768 ? 'column' : 'row', justifyContent: 'space-between', marginBottom: 16 }}>
+        <View style={{ width: dimensions.width < 768 ? '100%' : '45%' }}>
           <Text style={{
-            fontSize: 24,
+            fontSize: 20,
             fontWeight: 400,
             marginVertical: 8,
-            textAlign: 'center'
+            textAlign: 'left'
 
           }}>Activity Type</Text>
           <SelectList
             setSelected={setSelectedActivityType}
             data={activityType}
-            placeholder={"เลือกประเภท"}
+            placeholder={"Select activity type"}
+            boxStyles={{ width: 'auto', backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10  }}
+            dropdownStyles={{ backgroundColor: '#FEF0E6' }}
           />
         </View>
 
-        <View style={{ marginBottom: 12 }}>
+        <View style={{ width: dimensions.width < 768 ? '100%' : '45%' }}>
           <Text style={{
-            fontSize: 24,
+            fontSize: 20, 
             fontWeight: 400,
-            marginVertical: 8,
-            textAlign: 'center'
-
-          }}>Professor</Text>
-          <SelectList
-            setSelected={onSelectTeacher}
-            data={teachers}
-            placeholder={"เลือกชื่ออาจารย์"}
-          />
+            marginVertical: 8, 
+            textAlign: 'left', 
+            alignItems: 'flex-start' 
+            
+            }}>Professor</Text>
+            <SelectList
+              setSelected={onSelectTeacher}
+              data={teachers}
+              placeholder={"Select the professor name"}
+              placeholderTextColor="grey"
+              boxStyles={{ width: 'auto', backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10  }}
+              dropdownStyles={{ backgroundColor: '#FEF0E6' }}
+            />
         </View>
+      </View>
 
-        <View style={{ marginBottom: 12 }}>
+        <View style={{ marginBottom: 16, width: '70%' }}>
           <Text style={{
-            fontSize: 24,
+            fontSize: 20,
             fontWeight: 400,
             marginVertical: 8,
-            textAlign: 'center'
+            textAlign: 'left'
 
           }}>Topic</Text>
           <SelectList
             setSelected={setSelectedDiagnosis}
             data={mainDiagnoses}
             placeholder={"เลือกการวินิฉัย"}
+            boxStyles={{ width: 'auto', backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10  }}
+            dropdownStyles={{ backgroundColor: '#FEF0E6' }}
           />
         </View>
 
-        <View style={{ marginBottom: 12, width: '70%' }}>
+        <View style={{ marginBottom: 16, width: '70%', }}>
           <Text style={{
-            fontSize: 24,
+            fontSize: 20,
             fontWeight: 400,
             marginVertical: 8,
-            textAlign: 'center'
+            textAlign: 'left'
 
           }}>Note / Reflection (optional)</Text>
         <View style={{
           height: 260,
-          borderColor: 'black',
+          borderColor: '#FEF0E6',
           borderWidth: 1,
-          borderRadius: 8,
+          borderRadius: 10,
+          backgroundColor: '#FEF0E6'
         }}>
           <TextInput
-                placeholder={isFocused ? '' : "กรอกรายละเอียด"}
+                placeholder={isFocused ? '' : "Fill a note/reflection"}
                 placeholderTextColor="grey"
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(note.length > 0)}
@@ -440,29 +454,52 @@ function AddActivityScreen() {
         </View>
       </View>
 
+      <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: '20%' }}>
         <TouchableOpacity
-          style={{
-            height: 48,
-            width: 140,
-            marginVertical: 10,
-            marginBottom: 10,
-            justifyContent: "center",
-            alignItems: "center",
-            backgroundColor: "#05AB9F",
-            borderRadius: 30,
-            shadowColor: "#000",
-            shadowOffset: {
-              width: 0,
-              height: 2,
-            },
-            shadowOpacity: 0.25,
-            shadowRadius: 4,
-            elevation: 5,
-          }}
-          onPress={saveDataToFirestore}
-        >
-          <Text style={{ fontSize: 20, color: 'white' }}>Save</Text>
-        </TouchableOpacity>
+            onPress={saveDataToFirestore}
+            style={{
+              height: 48,
+              width: 120,
+              justifyContent: 'center',
+              alignItems: 'center',
+              backgroundColor: '#008000',
+              borderRadius: 30,
+              shadowColor: '#000',
+              shadowOffset: {
+                width: 0,
+                height: 2,
+              },
+              shadowOpacity: 0.25,
+              shadowRadius: 4,
+              elevation: 5,
+              marginRight: 20
+            }}
+          >
+            <Text style={{ fontSize: 20, color: 'white' }}>Save</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{
+              height: 48,
+              width: 120,
+              marginRight: 10,
+              justifyContent: 'center',
+              alignItems: 'center',
+              backgroundColor: 'grey',
+              borderRadius: 30,
+              shadowColor: '#000',
+              shadowOffset: {
+                width: 0,
+                height: 2,
+              },
+              shadowOpacity: 0.25,
+              shadowRadius: 4,
+              elevation: 5,
+            }}
+          >
+            <Text style={{ fontSize: 20, color: 'white' }}>Back</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </ScrollView>
     );

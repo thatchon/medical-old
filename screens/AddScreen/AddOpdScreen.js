@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Button, StyleSheet, TouchableOpacity, TextInput, Platform, ScrollView, Dimensions, Picker } from "react-native";
+import { View, Text, Button, StyleSheet, TouchableOpacity, TextInput, Platform, ScrollView, Dimensions } from "react-native";
 import { SelectList } from "react-native-dropdown-select-list";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { db, auth, storage } from '../../data/firebaseDB'
@@ -85,7 +85,6 @@ function AddOpdScreen({ navigation }) {
             borderColor: '#FEF0E6',
             borderWidth: 1,
             borderRadius: 10,
-
           }}
           value={selectedDate.toISOString().substr(0, 10)}
           onChange={(event) => setSelectedDate(new Date(event.target.value))}
@@ -109,6 +108,7 @@ function AddOpdScreen({ navigation }) {
       );
     }
   };
+
   const onDrop = acceptedFiles => {
     // Check if the uploaded file is a PDF
     if (acceptedFiles[0].type !== 'application/pdf') {
@@ -265,6 +265,7 @@ const removeDiagnosis = (index) => {
         setPdfFile(null);
         setSelectedHour("");
         setSelectedMinute("");
+
         // Display a success message or perform any other action
         alert("บันทึกข้อมูลสำเร็จ");
       } else {
@@ -288,12 +289,12 @@ const removeDiagnosis = (index) => {
 
       <View style={{ flexDirection: dimensions.width < 768 ? 'column' : 'row', alignItems: 'left', marginBottom: 16, justifyContent: 'space-between' }}>
         <View style={{ width: dimensions.width < 768 ? '100%' : '45%' }}>
-          <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left' }}>OPD Addmission Date</Text>
+          <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left' }}>OPD Admission Date</Text>
           <DateInput />
         </View>
         <View style={{ width: dimensions.width < 768 ? '100%' : '45%', flexDirection: 'row', justifyContent: 'left', alignItems: 'left' }}>
           <View>
-            <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left' }}>OPD Addmission Time</Text>
+            <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left' }}>OPD Admission Time</Text>
             <View style={{ flexDirection: 'row', alignItems: 'left' }}>
               <SelectList
                 setSelected={setSelectedHour}
@@ -320,45 +321,44 @@ const removeDiagnosis = (index) => {
 
 
       <View style={{ flexDirection: dimensions.width < 768 ? 'column' : 'row', justifyContent: 'space-between', marginBottom: 16 }}>
-
-      <View style={{ width: dimensions.width < 768 ? '100%' : '45%' }}>
-        <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left', alignItems: 'flex-start' }}>HN</Text>
-        <View style={{
-          height: 48,
-          borderColor: '#FEF0E6',
-          borderWidth: 1,
-          borderRadius: 10,
-          alignItems: 'left',
-          justifyContent: 'left',
-        }}>
-          <TextInput
-            placeholder="Fill the hospital number"
-            placeholderTextColor="grey"
-            value={hn}
-            onChangeText={setHN}
-            style={{
-              width: '100%',
-              textAlign: 'center',
-              height: '100%',
-              fontSize: 20,
-              backgroundColor: '#FEF0E6'
-            }}
-          />
+        <View style={{ width: dimensions.width < 768 ? '100%' : '45%' }}>
+          <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left', alignItems: 'flex-start' }}>HN</Text>
+            <View style={{
+              height: 48,
+              borderColor: '#FEF0E6',
+              borderWidth: 1,
+              borderRadius: 10,
+              alignItems: 'left',
+              justifyContent: 'left',
+            }}>
+              <TextInput
+                placeholder="Fill the hospital number"
+                placeholderTextColor="grey"
+                value={hn}
+                onChangeText={setHN}
+                style={{
+                  width: '100%',
+                  textAlign: 'center',
+                  height: '100%',
+                  fontSize: 20,
+                  backgroundColor: '#FEF0E6'
+                }}
+              />
+            </View>
         </View>
-      </View>
-      <View style={{ width: dimensions.width < 768 ? '100%' : '45%' }}>
-      <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left', alignItems: 'flex-start' }}>Professor</Text>
-        <SelectList
-          setSelected={onSelectTeacher}
-          data={teachers}
-          placeholder={"Select the professor name"}
-          placeholderTextColor="grey"
-          boxStyles={{ width: 'auto', backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10  }}
-          dropdownStyles={{ backgroundColor: '#FEF0E6' }}
-        />
+        
+        <View style={{ width: dimensions.width < 768 ? '100%' : '45%' }}>
+          <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left', alignItems: 'flex-start' }}>Professor</Text>
+            <SelectList
+              setSelected={onSelectTeacher}
+              data={teachers}
+              placeholder={"Select the professor name"}
+              placeholderTextColor="grey"
+              boxStyles={{ width: 'auto', backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10  }}
+              dropdownStyles={{ backgroundColor: '#FEF0E6' }}
+            />
       </View>
     </View>
-
 
         <View>
           <Text style={{
@@ -404,36 +404,34 @@ const removeDiagnosis = (index) => {
           }}>Co-Morbid Diagnosis</Text>
         </View>
         {
-  selectedDiagnosis.map((diagnosis, index) => (
-    <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 8 }}>
-      <View style={{ flex: 1 }}>
-        <SelectList
-          setSelected={(value) => {
-            const newDiagnoses = [...selectedDiagnosis];
-            newDiagnoses[index] = { value: value };
-            setSelectedDiagnosis(newDiagnoses);
-          }}
-          data={mainDiagnoses}
-          placeholder={"Select a diagnosis"}
-          boxStyles={{ width: 'auto', backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10  }}
-          dropdownStyles={{ backgroundColor: '#FEF0E6' }}
-        />
-      </View>
-      {index === selectedDiagnosis.length - 1 ? (
-        <TouchableOpacity onPress={addDiagnosis} style={{ marginLeft: 10, backgroundColor: '#5F7D8E', borderRadius: 5, paddingHorizontal: 10, paddingVertical: 5 }}>
-          <Text style={{ fontSize: 16, color: 'white' }}>+ Add</Text>
-        </TouchableOpacity>
-      ) : null}
-      {selectedDiagnosis.length > 1 ? (
-        <TouchableOpacity onPress={() => removeDiagnosis(index)} style={{ marginLeft: 10, backgroundColor: '#5F7D8E', borderRadius: 5, paddingHorizontal: 10, paddingVertical: 5 }}>
-          <Text style={{ fontSize: 16, color: 'white' }}>- Delete</Text>
-        </TouchableOpacity>
-      ) : null}
-    </View>
-  ))
-}
-
-
+          selectedDiagnosis.map((diagnosis, index) => (
+            <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 8 }}>
+              <View style={{ flex: 1 }}>
+                <SelectList
+                  setSelected={(value) => {
+                    const newDiagnoses = [...selectedDiagnosis];
+                    newDiagnoses[index] = { value: value };
+                    setSelectedDiagnosis(newDiagnoses);
+                  }}
+                  data={mainDiagnoses}
+                  placeholder={"Select a diagnosis"}
+                  boxStyles={{ width: 'auto', backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10  }}
+                  dropdownStyles={{ backgroundColor: '#FEF0E6' }}
+                />
+              </View>
+              {index === selectedDiagnosis.length - 1 ? (
+                <TouchableOpacity onPress={addDiagnosis} style={{ marginLeft: 10, backgroundColor: '#5F7D8E', borderRadius: 5, paddingHorizontal: 10, paddingVertical: 5 }}>
+                  <Text style={{ fontSize: 16, color: 'white' }}>+ Add</Text>
+                </TouchableOpacity>
+              ) : null}
+              {selectedDiagnosis.length > 1 ? (
+                <TouchableOpacity onPress={() => removeDiagnosis(index)} style={{ marginLeft: 10, backgroundColor: '#5F7D8E', borderRadius: 5, paddingHorizontal: 10, paddingVertical: 5 }}>
+                  <Text style={{ fontSize: 16, color: 'white' }}>- Delete</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          ))
+        }
           
         <View style={{ marginBottom: 16, width: '70%' }}>
           <Text style={{

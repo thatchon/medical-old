@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, ScrollView } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { clearUser } from '../redux/action';
 import { db } from '../data/firebaseDB'
@@ -8,6 +8,7 @@ import { Pie } from "react-chartjs-2";
 import {Chart, ArcElement, Tooltip, Legend} from 'chart.js'
 Chart.register(ArcElement, Tooltip, Legend);
 import SubHeader from '../component/SubHeader';  
+
 
 const HomeScreen = ({ navigation }) => {
   const user = useSelector((state) => state.user);
@@ -106,30 +107,50 @@ const HomeScreen = ({ navigation }) => {
       <View style={{marginTop: 20}}>
         <SubHeader text="Home Page" />
       </View>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-evenly', marginVertical: 10 }}>
-        <Image source={require('../assets/logo.png')} style={{ width: 150, height: 150, marginTop: 20 }} resizeMode="contain" />
-        <View style={{ flexDirection: 'column', justifyContent: 'center' }}>
-          <Text style={[styles.text, { fontSize: textSize }]}>{user.displayName}</Text>
-          <Text style={[styles.text, { fontSize: textSize }]}>Role : {user.role}</Text>
-          <Text style={{ fontSize: textSize, color: 'black', fontWeight: 'bold' }}>Department : [{user.department}]</Text>
-        </View>
-        <TouchableOpacity
-          style={[styles.button, styles.logoutButton]}
-          onPress={handleLogout}
-        >
-          <Text style={[styles.buttonText, { fontSize: buttonTextSize }]}>Logout</Text>
-        </TouchableOpacity>
+
+        <ScrollView>
+          <View style={{ flexDirection: dimensions.width < 768 ? 'column' : 'row', justifyContent: 'space-evenly', marginVertical: 10 }}>
+          <Image
+              source={
+                role === 'student'
+                  ? require('../assets/student.png')
+                  : role === 'teacher'
+                  ? require('../assets/professor.png')
+                  : require('../assets/staff.png')
+              }
+              style={{ width: 150, height: 150, alignSelf: 'center' }}
+              resizeMode="contain"
+            />
+            <View style={{ flexDirection: 'column', justifyContent: 'center', alignContent: 'center', alignSelf: 'center', marginTop: dimensions.width < 768 ? 20 : 0, marginBottom: dimensions.width < 768 ? 20 : 0 }}>
+              <Text style={[styles.text, { fontSize: textSize }]}>
+                <Text style={{ fontWeight: "bold" }}>Name : </Text> {user.displayName}
+              </Text>
+              <Text style={[styles.text, { fontSize: textSize }]}>
+                <Text style={{ fontWeight: "bold" }}>Role : </Text> {user.role}
+              </Text>
+              <Text style={[styles.text, { fontSize: textSize }]}>
+                <Text style={{ fontWeight: "bold" }}>Department : </Text> [{user.department}]
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.button, styles.logoutButton]}
+              onPress={handleLogout}
+            >
+              <Text style={[styles.buttonText, { fontSize: buttonTextSize }]}>Logout</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.line} />
+
+          <Text style={[styles.text, { fontSize: textSize, alignSelf: 'center', textAlign: 'center', marginVertical: 25, fontWeight: 'bold' }]}>Report Chart</Text>
+
+          <View style={{ alignItems: 'center', marginTop: 20 }}>
+            
+          {caseData && caseData.datasets && <Pie data={caseData} options={options} width={500} height={500} />}
+
+          </View>
+      </ScrollView>
       </View>
-      <View style={styles.line} />
-
-      <Text style={[styles.text, { fontSize: textSize, alignSelf: 'center', textAlign: 'center', marginTop: 20 }]}>Report Chart</Text>
-
-      <View style={{ alignItems: 'center', marginTop: 20 }}>
-        
-      {caseData && caseData.datasets && <Pie data={caseData} options={options} width={500} height={500} />}
-
-      </View>
-    </View>
+      
   );
 };
 
@@ -140,13 +161,12 @@ const styles = StyleSheet.create({
   },
   text: {
     color: 'black',
-    fontWeight: 'bold',
   },
   line: {
     height: 2,
     width: '100%',
     backgroundColor: '#FE810E',
-    marginHorizontal: 15,
+    marginVertical: 15,
   },
   button: {
     height: 41,

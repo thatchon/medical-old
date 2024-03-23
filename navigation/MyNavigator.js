@@ -26,8 +26,10 @@ import OpdHistoryScreen from '../screens/AddHistoryScreen/OpdHistoryScreen'
 import ActivityHistoryScreen from '../screens/AddHistoryScreen/ActivityHistoryScreen';
 import ProcedureHistoryScreen from '../screens/AddHistoryScreen/ProcedureHistoryScreen';
 
+import EditIpdScreen from '../screens/EditScreen/EditIpdScreen'
 import EditOpdScreen from '../screens/EditScreen/EditOpdScreen'
 import EditProcedureScreen from '../screens/EditScreen/EditProcedureScreen';
+import EditActivityScreen from '../screens/EditScreen/EditActivityScreen';
 import ResetPasswordScreen from '../screens/ResetPasswordScreen'
 
 // สร้าง Stack Navigator สำหรับหน้า Login และ Home
@@ -260,7 +262,20 @@ function MyNavigator() {
         }} />
 
         <Stack.Screen name="AddIpd" component={AddIpdScreen} options={{
+          headerShown: false,
           title: 'เพิ่มข้อมูลผู้ป่วยใน',
+          headerStyle: {
+            backgroundColor: '#7274AE',
+          },
+          headerTintColor: '#fff',
+          headerTitleAlign: 'center',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
+        }} />
+        <Stack.Screen name="EditIpd" component={EditIpdScreen} options={{
+          headerShown: false,
+          title: 'แก้ไขข้อมูลผู้ป่วยใน',
           headerStyle: {
             backgroundColor: '#7274AE',
           },
@@ -296,6 +311,7 @@ function MyNavigator() {
         }} />
 
         <Stack.Screen name="EditOpd" component={EditOpdScreen} options={{
+          headerShown: false,
           title: 'แก้ไขข้อมูลผู้ป่วยนอก',
           headerStyle: {
             backgroundColor: '#7274AE',
@@ -320,6 +336,7 @@ function MyNavigator() {
         }} />
 
         <Stack.Screen name="AddActivity" component={AddActivityScreen} options={{
+          headerShown: false,
           title: 'เพิ่มข้อมูลกิจกรรม',
           headerStyle: {
             backgroundColor: '#7274AE',
@@ -330,6 +347,20 @@ function MyNavigator() {
             fontWeight: 'bold',
           },
         }} />
+
+        <Stack.Screen name="EditActivity" component={EditActivityScreen} options={{
+          headerShown: false,
+          title: 'แก้ไขข้อมูลกิจกรรม',
+          headerStyle: {
+            backgroundColor: '#7274AE',
+          },
+          headerTintColor: '#fff',
+          headerTitleAlign: 'center',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
+        }} />
+
         <Stack.Screen name="ActivityHistory" component={ActivityHistoryScreen} options={{
           title: 'ประวัติกิจกรรม',
           headerStyle: {
@@ -343,6 +374,7 @@ function MyNavigator() {
         }} />
 
         <Stack.Screen name="AddProcedure" component={AddProcedureScreen} options={{
+          headerShown: false,
           title: 'เพิ่มข้อมูลหัตถการ',
           headerStyle: {
             backgroundColor: '#7274AE',
@@ -355,6 +387,7 @@ function MyNavigator() {
         }} />
 
         <Stack.Screen name="EditProcedure" component={EditProcedureScreen} options={{
+          headerShown: false,
           title: 'แก้ไขข้อมูลหัตถการ',
           headerStyle: {
             backgroundColor: '#7274AE',
