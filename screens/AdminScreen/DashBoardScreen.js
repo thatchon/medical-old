@@ -1,24 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, ScrollView } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
-import { clearUser } from '../redux/action';
-import { db } from '../data/firebaseDB'
-import { getDocs, collection, query, where } from "firebase/firestore";
-import { Pie } from "react-chartjs-2";
+import { clearUser } from '../../redux/action';
+import { db } from '../../data/firebaseDB';
+import { getDocs, collection, query, where } from 'firebase/firestore';
+import { Pie } from 'react-chartjs-2';
 import {Chart, ArcElement, Tooltip, Legend} from 'chart.js'
 Chart.register(ArcElement, Tooltip, Legend);
-import SubHeader from '../component/SubHeader';  
 import { SelectList } from "react-native-dropdown-select-list";
 
-const HomeScreen = ({ navigation }) => {
+const DashBoardScreen = ({ navigation }) => {
   const user = useSelector((state) => state.user);
   const role = useSelector((state) => state.role);
   const dispatch = useDispatch();
 
   const [dimensions, setDimensions] = useState(Dimensions.get('window'));
   const [caseData, setCaseData] = useState([]);
-  const [selectedCollection, setSelectedCollection] = useState('all'); // 1. เพิ่ม state สำหรับเก็บชื่อ Collection ที่ถูกเลือก
-  
+  const [selectedCollection, setSelectedCollection] = useState('all'); // เพิ่ม state สำหรับเก็บชื่อ Collection ที่ถูกเลือก
+
   useEffect(() => {
     const onChange = ({ window }) => {
       setDimensions(window);
@@ -40,21 +39,8 @@ const HomeScreen = ({ navigation }) => {
   useEffect(() => {
     // ดึงข้อมูลจาก Firebase และตั้งค่าข้อมูลสำหรับ Pie Chart
     fetchDataForPieChart();
-  }, [selectedCollection]); // 2. เพิ่ม selectedCollection เป็น dependency ของ useEffect เพื่อให้มันเรียกใช้งานใหม่เมื่อมีการเปลี่ยนแปลง
+  }, [selectedCollection]); // เพิ่ม selectedCollection เป็น dependency ของ useEffect เพื่อให้มันเรียกใช้งานใหม่เมื่อมีการเปลี่ยนแปลง
 
-  const getRoleName = (role) => {
-    switch (role) {
-      case 'student':
-        return 'Student';
-      case 'teacher':
-        return 'Professor';
-      case 'staff':
-        return 'Staff';
-      default:
-        return '';
-    }
-  };
-  
   const fetchDataForPieChart = async () => {
     try {
       let collectionRefs = [];
@@ -71,24 +57,9 @@ const HomeScreen = ({ navigation }) => {
       let approvedCases = 0;
       let rejectedCases = 0;
       let pendingCases = 0;
-      let reApprovedCases = 0;
   
       for (const collectionRef of collectionRefs) {
-        let userQuerySnapshot;
-        if (user.role === 'staff') {
-          // หากเป็น staff ให้ดึงเคสทั้งหมดในระบบโดยไม่ต้องอิง createBy_id หรือ professorId
-          userQuerySnapshot = await getDocs(collectionRef);
-        } else {
-          let queryField = 'createBy_id'; // ใช้เงื่อนไขเริ่มต้นสำหรับผู้ใช้ทั่วไป
-          
-          // ตรวจสอบบทบาทของผู้ใช้
-          if (user.role === 'teacher') {
-            // หากเป็นอาจารย์ให้ใช้เงื่อนไขอื่นเช่น professorId หรือ approvedById
-            queryField = 'professorId' || 'approvedById'; // หรือ 'approvedById' ตามที่ต้องการ
-          } 
-    
-          userQuerySnapshot = await getDocs(query(collectionRef, where(queryField, '==', user.uid)));
-        }
+        const userQuerySnapshot = await getDocs(collectionRef);
   
         userQuerySnapshot.forEach((doc) => {
           const data = doc.data();
@@ -98,18 +69,16 @@ const HomeScreen = ({ navigation }) => {
             rejectedCases++;
           } else if (data.status === 'pending') {
             pendingCases++;
-          } else if (data.status === 'reApproved') {
-            reApprovedCases++;
           }
         });
       }
   
       const data = {
-        labels: ['Approved', 'Rejected', 'Pending', 'Re-approved'],
+        labels: ['Approved', 'Rejected', 'Pending'],
         datasets: [
           {
-            data: [approvedCases, rejectedCases, pendingCases, reApprovedCases],
-            backgroundColor: ['#2a9d8f', '#e76f51', '#e9c46a', '#7ecafc'],
+            data: [approvedCases, rejectedCases, pendingCases],
+            backgroundColor: ['#2a9d8f', '#e76f51', '#e9c46a'],
           },
         ],
       };
@@ -119,8 +88,6 @@ const HomeScreen = ({ navigation }) => {
       console.error('Error fetching data:', error);
     }
   };
-  
-  
   
 
   const options = {
@@ -148,34 +115,9 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <View style={{marginTop: 20}}>
-        <SubHeader text="Home Page" />
-      </View>
 
         <ScrollView>
-          <View style={{ flexDirection: dimensions.width < 768 ? 'column' : 'row', justifyContent: 'space-evenly', marginVertical: 10 }}>
-            <Image
-              source={
-                role === 'student'
-                  ? require('../assets/student.png')
-                  : role === 'teacher'
-                  ? require('../assets/professor.png')
-                  : require('../assets/staff.png')
-              }
-              style={{ width: 150, height: 150, alignSelf: 'center' }}
-              resizeMode="contain"
-            />
-            <View style={{ flexDirection: 'column', justifyContent: 'center', alignContent: 'center', alignSelf: 'center', marginTop: dimensions.width < 768 ? 20 : 0, marginBottom: dimensions.width < 768 ? 20 : 0 }}>
-              <Text style={[styles.text, { fontSize: textSize }]}>
-                <Text style={{ fontWeight: "bold" }}>Name : </Text> {user.displayName}
-              </Text>
-              <Text style={[styles.text, { fontSize: textSize }]}>
-                <Text style={{ fontWeight: "bold" }}>Role : </Text> {getRoleName(user.role)}
-              </Text>
-              <Text style={[styles.text, { fontSize: textSize }]}>
-                <Text style={{ fontWeight: "bold" }}>Department : </Text> [{user.department}]
-              </Text>
-            </View>
+          <View style={{ flexDirection: dimensions.width < 768 ? 'column' : 'row', justifyContent: 'flex-end', marginVertical: 10 }}>
             <TouchableOpacity
               style={[styles.button, styles.logoutButton]}
               onPress={handleLogout}
@@ -183,16 +125,14 @@ const HomeScreen = ({ navigation }) => {
               <Text style={[styles.buttonText, { fontSize: buttonTextSize }]}>Logout</Text>
             </TouchableOpacity>
           </View>
-          <View style={styles.line} />
 
           <Text style={[styles.text, { fontSize: textSize, alignSelf: 'center', textAlign: 'center', marginVertical: 25, fontWeight: 'bold' }]}>Report Chart</Text>
 
-          {/* เพิ่ม DropDownList สำหรับการเลือก Collection */}
           <View style={{ alignItems: 'center', marginTop: 20 }}>
+            
+          {caseData && caseData.datasets && <Pie data={caseData} options={options} width={500} height={500} />}
 
-            {caseData && caseData.datasets && <Pie data={caseData} options={options} width={500} height={500} />}
           </View>
-
           <View style={{ marginVertical: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
             <SelectList
                 placeholder='All'
@@ -209,9 +149,9 @@ const HomeScreen = ({ navigation }) => {
                 dropdownStyles={{ backgroundColor: '#FEF0E6' }}
               />
           </View>
-
       </ScrollView>
-    </View>
+      </View>
+      
   );
 };
 
@@ -251,4 +191,4 @@ const styles = StyleSheet.create({
   }
 });
 
-export default HomeScreen;
+export default DashBoardScreen;

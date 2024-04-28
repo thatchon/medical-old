@@ -13,7 +13,7 @@ function EditIpdScreen({ route, navigation }) {
   const { patientData } = route.params;
 
   const [selectedDate, setSelectedDate] = useState(patientData.admissionDate.toDate());
-  const [mainDiagnosis, setMainDiagnosis] = useState(patientData.mainDiagnosis);
+  const [mainDiagnosis, setMainDiagnosis] = useState(patientData.mainDiagnosis || []);
   const [selectedDiagnosis, setSelectedDiagnosis] = useState(patientData.coMorbid || []);
   const [hn, setHN] = useState(patientData.hn);
   const [note, setNote] = useState(patientData.note);
@@ -221,7 +221,7 @@ const removeDiagnosis = (index) => {
       <View style={styles.container}>
 
       <View style={{marginVertical: windowWidth.width < 768 ? 40 : 60,}}>
-        <SubHeader text="EDIT OUTPATIENT" />
+        <SubHeader text="EDIT INPATIENT" />
       </View>
 
       <View style={{ flexDirection: dimensions.width < 768 ? 'column' : 'row', alignItems: 'left', marginBottom: 16, justifyContent: 'space-between' }}>

@@ -14,7 +14,8 @@ import {
   Linking,
   Dimensions,
   TextInput,
-  CheckBox
+  CheckBox,
+  ActivityIndicator
 } from "react-native";
 import { SelectList } from "react-native-dropdown-select-list";
 import { useSelector } from "react-redux";
@@ -32,6 +33,7 @@ function ProcedureScreen({ navigation }) {
   const [action, setAction] = useState(null); // ตัวแปรสำหรับเก็บว่า user กำลังทำงานอะไร หรือกดปุ่มไหน
   const currentUserUid = useSelector((state) => state.user.uid); // สมมติว่า uid เก็บอยู่ใน userUid ของ state
   const role = useSelector((state) => state.role);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [windowWidth, setWindowWidth] = useState(Dimensions.get('window').width);
   const [windowHeight, setWindowHeight] = useState(Dimensions.get('window').height);
@@ -46,6 +48,10 @@ function ProcedureScreen({ navigation }) {
     { key: 'rejected', value: 'Rejected' },
   ];
 
+  const [searchText, setSearchText] = useState("");
+  const [filteredProcedureData, setFilteredProcedureData] = useState([]); // state เก็บข้อมูลผู้ใช้ที่ผ่านการกรอง
+  const [unfilteredProcedureData, setUnfilteredProcedureData] = useState([]);
+
   // ประกาศ State สำหรับการเก็บค่าการให้คะแนน
   const [rating, setRating] = useState('');
 
@@ -53,6 +59,33 @@ function ProcedureScreen({ navigation }) {
   const handleRatingChange = (newRating) => {
     setRating(newRating);
   };
+
+ const handleSearch = (text) => {
+    const searchText = text.toLowerCase(); 
+    
+    // ตรวจสอบว่าถ้าไม่มีการค้นหา (text ว่าง) ให้แสดงทุกรายชื่อ
+    if (!searchText.trim()) {
+      setFilteredProcedureData(unfilteredProcedureData); // ใช้ข้อมูลทั้งหมดโดยไม่กรองเมื่อไม่มีการค้นหา
+      return;
+    }
+    
+    // ค้นหาใน Collection patients และ filter ตามเงื่อนไขที่กำหนด
+    const filteredProcedures = unfilteredProcedureData.filter((procedure) => (
+      procedure.hn && procedure.hn.toLowerCase().includes(searchText) // ค้นหา hn ใน Collection patients
+    ));
+    
+    setFilteredProcedureData(filteredProcedures);
+  };
+  
+  useEffect(() => {
+    // ตั้งค่าข้อมูลทั้งหมดของผู้ใช้เมื่อคอมโพเนนต์โหลด
+    setUnfilteredProcedureData(procedureData);
+  }, [procedureData]); // ให้ useEffect ทำงานเมื่อ patientData เปลี่ยน
+  
+  useEffect(() => {
+    // เรียก handleSearch เมื่อ searchText เปลี่ยน
+    handleSearch(searchText);
+  }, [searchText, unfilteredProcedureData]); // ให้ useEffect ทำงานเมื่อ searchText หรือ unfilteredPatientData เปลี่ยน
 
   const updateWindowDimensions = () => {
     setWindowWidth(Dimensions.get('window').width);
@@ -89,7 +122,7 @@ function ProcedureScreen({ navigation }) {
       width: isMobile ? "90%" : "90%", // ปรับแต่งความกว้างของ boxCard ตามอุปกรณ์
       marginLeft: isMobile ? "50" : "50",
       marginRight: isMobile ? "50" : "50",
-      marginTop: isMobile ? 10 : 50,
+      marginTop: isMobile ? 10 : 20,
     },
     card: {
       width: "95%",
@@ -310,6 +343,7 @@ function ProcedureScreen({ navigation }) {
 
   const loadProcedureData = async () => {
     try {
+      setIsLoading(true);
       const procedureCollectionRef = collection(db, "procedures");
       const userCollectionRef = collection(db, "users");
       const querySnapshot = await getDocs(procedureCollectionRef);
@@ -341,7 +375,9 @@ function ProcedureScreen({ navigation }) {
       // }
 
       setProcedureData(procedures);
+      setIsLoading(false);
     } catch (error) {
+      setIsLoading(false);
       console.error("Error fetching procedure data:", error);
     }
   };
@@ -500,6 +536,7 @@ function ProcedureScreen({ navigation }) {
             shadowOpacity: 0.25,
             shadowRadius: 4,
             elevation: 5,
+            marginBottom: 10
           }}
         >
           <Text style={{ fontSize: 22, color: "white" }}>Approve all (for professor)</Text>
@@ -529,7 +566,15 @@ function ProcedureScreen({ navigation }) {
   };
 
   const renderCards = () => {
-    return procedureData
+    if (isLoading) {
+      // แสดง animation loading หรือข้อความแสดงสถานะ loading
+      return (
+        <ActivityIndicator size="large" color="#0000ff" />
+
+        // <Text>Loading...</Text>
+      );
+    }
+    return filteredProcedureData
       .filter(procedure => procedure.status === selectedStatus) // กรองเฉพาะข้อมูลที่มีสถานะเป็น pending
       .sort((a, b) => b.admissionDate.toDate() - a.admissionDate.toDate()) // เรียงลำดับตามวันที่ล่าสุดไปยังเก่าสุด
       .map((procedure, index) => (
@@ -678,9 +723,10 @@ function ProcedureScreen({ navigation }) {
           <TextInput
             style={{ flex: 1, backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10, padding: 12, marginLeft: 15 }}
             placeholder="Search by hn"
-            onChangeText={text => {
-              // ทำอะไรกับข้อความที่ผู้ใช้ป้อน
-            }}
+            value={searchText}
+              onChangeText={(text) => {
+                setSearchText(text);
+              }}
           />
         
         </View>
@@ -716,14 +762,16 @@ function ProcedureScreen({ navigation }) {
                       <Text style={{ marginLeft: 5 }}>Acceptable</Text>
                     </View>
 
-                      <TextInput
-                        placeholder="Please enter a comment."
-                          value={comment}
-                          onChangeText={setComment}
-                          multiline
-                          numberOfLines={4}
-                          style={{ height: 80, width: '100%', borderColor: 'gray', borderWidth: 1, marginBottom: 20, textAlignVertical: 'top' }}
-                      />
+                    <Text style={{marginBottom: 10, fontSize: 20, fontWeight: 'bold'}}>Add comment(optional)</Text>
+                    <TextInput
+                      placeholder="Please enter a comment."
+                      placeholderTextColor="grey"
+                      value={comment}
+                      onChangeText={setComment}
+                      multiline
+                      numberOfLines={4}
+                      style={{ height: 150, width: '100%', borderColor: 'gray', borderWidth: 1, borderRadius: 10, marginBottom: 20, textAlignVertical: 'top' }}
+                    />
                         
                         <View style={styles.buttonContainer}>
                             <Pressable
@@ -841,10 +889,10 @@ function ProcedureScreen({ navigation }) {
                       </>
                     )}
                   <Text style={styles.modalText}>
-                    <Text style={{ fontWeight: "bold" }}>Type : </Text> {selectedProcedure.procedureType}
+                    <Text style={{ fontWeight: "bold" }}>Professor Name : </Text> {selectedProcedure.approvedByName}
                   </Text>
                   <Text style={styles.modalText}>
-                    <Text style={{ fontWeight: "bold" }}>Professor Name : </Text> {selectedProcedure.approvedByName}
+                    <Text style={{ fontWeight: "bold" }}>Type : </Text> {selectedProcedure.procedureType}
                   </Text>
                   <Text style={styles.modalText}>
                     <Text style={{ fontWeight: "bold" }}>HN :</Text> {selectedProcedure.hn || "None"}

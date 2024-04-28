@@ -16,9 +16,7 @@ import AddOpdScreen from '../screens/AddScreen/AddOpdScreen';
 import AddActivityScreen from '../screens/AddScreen/AddActivityScreen';
 import AddProcedureScreen from '../screens/AddScreen/AddProcedureScreen';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { FontAwesome5 } from '@expo/vector-icons';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome, FontAwesome5,  AntDesign, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSelector } from "react-redux";
 
 import IpdHistoryScreen from '../screens/AddHistoryScreen/IpdHistoryScreen'
@@ -32,12 +30,18 @@ import EditProcedureScreen from '../screens/EditScreen/EditProcedureScreen';
 import EditActivityScreen from '../screens/EditScreen/EditActivityScreen';
 import ResetPasswordScreen from '../screens/ResetPasswordScreen'
 
+import DashBoardScreen from '../screens/AdminScreen/DashBoardScreen'
+import UserManagementScreen from '../screens/AdminScreen/UserManagementScreen'
+import UserCaseScreen from '../screens/AdminScreen/UserCaseScreen'
+import ExportScreen from '../screens/AdminScreen/ExportScreen'
+
+import AddUserScreen from '../screens/AdminScreen/AddUserScreen';
 // สร้าง Stack Navigator สำหรับหน้า Login และ Home
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-
 function MainTabNavigator() {
+
   const role = useSelector((state) => state.user.role);
   const { width } = useWindowDimensions();
   const isMobile = width < 768; // กำหนดเกณฑ์สำหรับอุปกรณ์มือถือ
@@ -49,6 +53,7 @@ function MainTabNavigator() {
       tabBarStyle: { backgroundColor: '#FE810E' },
     }}
   >
+    { (role === "student" || role === "teacher") && (
       <Tab.Screen name="หน้าหลัก" component={HomeScreen}
         options={{
           headerShown: false,
@@ -59,7 +64,9 @@ function MainTabNavigator() {
             <MaterialCommunityIcons name="home-variant" size={24} color={focused ? 'white' : 'grey'} />
           ),
         }} />
+    )}
 
+  { (role === "student" || role === "teacher") && (
         <Tab.Screen
           name="ผู้ป่วยใน"
           component={IpdScreen}
@@ -82,7 +89,9 @@ function MainTabNavigator() {
             headerRight: () => <IpdHeaderRight navigation={navigation} />
           })}
         />
+  )}
 
+  { (role === "student" || role === "teacher") && (
       <Tab.Screen 
         name="ผู้ป่วยนอก" 
         component={OpdScreen}
@@ -104,7 +113,8 @@ function MainTabNavigator() {
           },
           headerRight: () => <OpdHeaderRight navigation={navigation} />
         })} />
-        
+  )}
+  { (role === "student" || role === "teacher") && (
       <Tab.Screen 
         name="หัตถการ" 
         component={ProcedureScreen}
@@ -126,7 +136,8 @@ function MainTabNavigator() {
           },
           headerRight: () => <ProcedureHeaderRight navigation={navigation} />
         })} />
-
+  )}
+  { (role === "student" || role === "teacher") && (
       <Tab.Screen 
         name="กิจกรรม" 
         component={ActivityScreen}
@@ -148,8 +159,8 @@ function MainTabNavigator() {
           },
           headerRight: () => <ActivityHeaderRight navigation={navigation} />
         })} />
-
-      {role == "teacher" && (
+  )}
+      {/* {role == "teacher" && (
           <Tab.Screen 
               name="รายงานผล" 
               component={ReportScreen}
@@ -167,8 +178,98 @@ function MainTabNavigator() {
                   },
               }} 
           />
+      )} */}
+      { role == "staff" && (
+        <Tab.Screen 
+        name="Dashboard" 
+        component={DashBoardScreen} 
+        options={({ navigation }) => ({
+            title: 'Dashboard',
+            tabBarActiveTintColor: 'white',
+            tabBarInactiveTintColor: 'grey',
+            tabBarIcon: ({ focused, color, size }) => (
+              <FontAwesome name="dashboard" size={24} color={focused ? 'white' : 'grey'} />
+            ),
+            headerStyle: {
+              backgroundColor: '#FE810E',
+            },
+            headerTintColor: '#fff',
+            headerTitleAlign: 'center',
+            headerTitleStyle: {
+              fontWeight: 'bold',
+            }
+          })} 
+          />
+        )} 
+
+      { role == "staff" && (
+        <Tab.Screen 
+        name="User Management" 
+        component={UserManagementScreen} 
+        options={({ navigation }) => ({
+          title: 'User Management',
+          tabBarActiveTintColor: 'white',
+          tabBarInactiveTintColor: 'grey',
+          tabBarIcon: ({ focused, color, size }) => (
+            <AntDesign name="user" size={24} color={focused ? 'white' : 'grey'} />
+          ),
+          headerStyle: {
+            backgroundColor: '#FE810E',
+          },
+          headerTintColor: '#fff',
+          headerTitleAlign: 'center',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          }
+        })} 
+        />
+      )}
+
+      { role == "staff" && (
+        <Tab.Screen name="User Case" 
+        component={UserCaseScreen} 
+        options={({ navigation }) => ({
+          title: 'Cases',
+          tabBarActiveTintColor: 'white',
+          tabBarInactiveTintColor: 'grey',
+          tabBarIcon: ({ focused, color, size }) => (
+            <FontAwesome name="th-list" size={24} color={focused ? 'white' : 'grey'} />
+          ),
+          headerStyle: {
+            backgroundColor: '#FE810E',
+          },
+          headerTintColor: '#fff',
+          headerTitleAlign: 'center',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          }
+        })} 
+        />
+      )}
+
+      { role == "staff" && (
+        <Tab.Screen name="Export" 
+        component={ExportScreen} 
+        options={({ navigation }) => ({
+          title: 'Export',
+          tabBarActiveTintColor: 'white',
+          tabBarInactiveTintColor: 'grey',
+          tabBarIcon: ({ focused, color, size }) => (
+            <AntDesign name="export2" size={24} color={focused ? 'white' : 'grey'} />
+          ),
+          headerStyle: {
+            backgroundColor: '#FE810E',
+          },
+          headerTintColor: '#fff',
+          headerTitleAlign: 'center',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          }
+        })} 
+        />
       )}
     </Tab.Navigator>
+
   );
 }
 
@@ -220,8 +321,12 @@ function ProcedureHeaderRight({ navigation }) {
   );
 }
 
+
 function MyNavigator() {
 
+  const user = useSelector((state) => state.user);
+  const role = user ? user.role : null;
+  
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="SelectRole">
@@ -403,6 +508,18 @@ function MyNavigator() {
           title: 'ประวัติหัตถการ',
           headerStyle: {
             backgroundColor: '#7274AE',
+          },
+          headerTintColor: '#fff',
+          headerTitleAlign: 'center',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
+        }} />
+
+        <Stack.Screen name="AddUser" component={AddUserScreen} options={{
+          title: 'Add user',
+          headerStyle: {
+            backgroundColor: '#FE810E',
           },
           headerTintColor: '#fff',
           headerTitleAlign: 'center',

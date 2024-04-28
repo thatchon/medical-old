@@ -408,7 +408,7 @@ function AddProcedureScreen({ navigation }) {
               marginVertical: 8,
               textAlign: 'left'
 
-            }}>Level</Text>
+            }}>Level (เลือกได้เพียง 1 ตัวเลือก)</Text>
 
             <View style={{ flexDirection: dimensions.width < 768 ? 'column' : 'row', justifyContent: 'space-between', width: '100%'}}>
               <View style={styles.checkboxContainerStyle}>

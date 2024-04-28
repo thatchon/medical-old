@@ -13,7 +13,8 @@ import {
   Linking,
   Dimensions,
   TextInput,
-  CheckBox
+  CheckBox,
+  ActivityIndicator
 } from "react-native";
 import { SelectList } from "react-native-dropdown-select-list";
 import { useSelector } from "react-redux";
@@ -31,6 +32,7 @@ function OpdScreen({ navigation }) {
   const [action, setAction] = useState(null); // ตัวแปรสำหรับเก็บว่า user กำลังทำงานอะไร หรือกดปุ่มไหน
   const currentUserUid = useSelector((state) => state.user.uid); // สมมติว่า uid เก็บอยู่ใน userUid ของ state
   const role = useSelector((state) => state.role);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [windowWidth, setWindowWidth] = useState(Dimensions.get('window').width);
   const [windowHeight, setWindowHeight] = useState(Dimensions.get('window').height);
@@ -44,6 +46,10 @@ function OpdScreen({ navigation }) {
     { key: 'approved', value: 'Approved' },
     { key: 'rejected', value: 'Rejected' },
   ];
+
+  const [searchText, setSearchText] = useState("");
+  const [filteredPatientData, setFilteredPatientData] = useState([]); // state เก็บข้อมูลผู้ใช้ที่ผ่านการกรอง
+  const [unfilteredPatientData, setUnfilteredPatientData] = useState([]);
 
   const [professionalismScoresModalVisible, setProfessionalismScoresModalVisible] = useState(false);
 
@@ -63,6 +69,34 @@ function OpdScreen({ navigation }) {
   const handleRatingChange = (newRating) => {
     setRating(newRating);
   };
+
+  const handleSearch = (text) => {
+    const searchText = text.toLowerCase(); 
+    
+    // ตรวจสอบว่าถ้าไม่มีการค้นหา (text ว่าง) ให้แสดงทุกรายชื่อ
+    if (!searchText.trim()) {
+      setFilteredPatientData(unfilteredPatientData); // ใช้ข้อมูลทั้งหมดโดยไม่กรองเมื่อไม่มีการค้นหา
+      return;
+    }
+    
+    // ค้นหาใน Collection patients และ filter ตามเงื่อนไขที่กำหนด
+    const filteredPatients = unfilteredPatientData.filter((patient) => (
+      patient.patientType === 'outpatient' && // ตรวจสอบ patientType เป็น inpatient
+      patient.hn && patient.hn.toLowerCase().includes(searchText) // ค้นหา hn ใน Collection patients
+    ));
+    
+    setFilteredPatientData(filteredPatients);
+  };
+  
+  useEffect(() => {
+    // ตั้งค่าข้อมูลทั้งหมดของผู้ใช้เมื่อคอมโพเนนต์โหลด
+    setUnfilteredPatientData(patientData);
+  }, [patientData]); // ให้ useEffect ทำงานเมื่อ patientData เปลี่ยน
+  
+  useEffect(() => {
+    // เรียก handleSearch เมื่อ searchText เปลี่ยน
+    handleSearch(searchText);
+  }, [searchText, unfilteredPatientData]); // ให้ useEffect ทำงานเมื่อ searchText หรือ unfilteredPatientData เปลี่ยน
 
   const updateWindowDimensions = () => {
     setWindowWidth(Dimensions.get('window').width);
@@ -105,7 +139,7 @@ function OpdScreen({ navigation }) {
       width: isMobile ? "90%" : "90%", // ปรับแต่งความกว้างของ boxCard ตามอุปกรณ์
       marginLeft: isMobile ? "50" : "50",
       marginRight: isMobile ? "50" : "50",
-      marginTop: isMobile ? 10 : 50,
+      marginTop: isMobile ? 10 : 20,
     },
     card: {
       width: "95%",
@@ -338,6 +372,7 @@ function OpdScreen({ navigation }) {
 
   const loadPatientData = async () => {
     try {
+      setIsLoading(true);
       const patientCollectionRef = collection(db, "patients");
       const userCollectionRef = collection(db, "users");
       const querySnapshot = await getDocs(patientCollectionRef);
@@ -369,7 +404,9 @@ function OpdScreen({ navigation }) {
       }
 
       setPatientData(patients);
+      setIsLoading(false);
     } catch (error) {
+      setIsLoading(false);
       console.error("Error fetching patient data:", error);
     }
   };
@@ -546,6 +583,7 @@ function OpdScreen({ navigation }) {
             shadowOpacity: 0.25,
             shadowRadius: 4,
             elevation: 5,
+            marginBottom: 10
           }}
         >
           <Text style={{ fontSize: 22, color: "white" }}>Approve all (for professor)</Text>
@@ -566,7 +604,15 @@ function OpdScreen({ navigation }) {
   };
 
   const renderCards = () => {
-    return patientData
+    if (isLoading) {
+      // แสดง animation loading หรือข้อความแสดงสถานะ loading
+      return (
+        <ActivityIndicator size="large" color="#0000ff" />
+        // หรือแสดงข้อความเพื่อแจ้งให้ผู้ใช้รู้ว่ากำลังโหลดข้อมูล
+        // <Text>Loading...</Text>
+      );
+    }
+    return filteredPatientData
       .filter(patient => patient.status === selectedStatus) 
       .sort((a, b) => b.admissionDate.toDate() - a.admissionDate.toDate()) // เรียงลำดับตามวันที่ล่าสุดไปยังเก่าสุด
       .map((patient, index) => (
@@ -709,9 +755,10 @@ function OpdScreen({ navigation }) {
           <TextInput
             style={{ flex: 1, backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10, padding: 12, marginLeft: 15 }}
             placeholder="Search by hn"
-            onChangeText={text => {
-              // ทำอะไรกับข้อความที่ผู้ใช้ป้อน
-            }}
+            value={searchText}
+              onChangeText={(text) => {
+                setSearchText(text);
+              }}
           />
         
         </View>
@@ -732,7 +779,7 @@ function OpdScreen({ navigation }) {
                   value={professionalismScores.punctual}
                   onValueChange={() => handleCheckboxChange('punctual')}
                 />
-                <Text style={styles.checkboxLabel}>ตรงต่อเวลา</Text>
+                <Text style={styles.checkboxLabel}>Punctual</Text>
               </View>
 
               <View style={styles.checkboxContainer}>
@@ -740,7 +787,7 @@ function OpdScreen({ navigation }) {
                   value={professionalismScores.appropriatelyDressed}
                   onValueChange={() => handleCheckboxChange('appropriatelyDressed')}
                 />
-                <Text style={styles.checkboxLabel}>แต่งกายเหมาะสม</Text>
+                <Text style={styles.checkboxLabel}>Appropriately dressed</Text>
               </View>
 
               <View style={styles.checkboxContainer}>
@@ -748,7 +795,7 @@ function OpdScreen({ navigation }) {
                   value={professionalismScores.respectsPatients}
                   onValueChange={() => handleCheckboxChange('respectsPatients')}
                 />
-                <Text style={styles.checkboxLabel}>เคารพผู้ป่วย</Text>
+                <Text style={styles.checkboxLabel}>Respect the patient</Text>
               </View>
 
               <View style={styles.checkboxContainer}>
@@ -756,7 +803,7 @@ function OpdScreen({ navigation }) {
                   value={professionalismScores.goodListener}
                   onValueChange={() => handleCheckboxChange('goodListener')}
                 />
-                <Text style={styles.checkboxLabel}>เป็นผู้ฟังที่ดี</Text>
+                <Text style={styles.checkboxLabel}>Good listener</Text>
               </View>
 
               <View style={styles.checkboxContainer}>
@@ -764,7 +811,7 @@ function OpdScreen({ navigation }) {
                   value={professionalismScores.respectsColleagues}
                   onValueChange={() => handleCheckboxChange('respectsColleagues')}
                 />
-                <Text style={styles.checkboxLabel}>ให้เกียรติเพื่อนร่วมงาน</Text>
+                <Text style={styles.checkboxLabel}>Respect colleagues</Text>
               </View>
 
               <View style={styles.checkboxContainer}>
@@ -772,7 +819,7 @@ function OpdScreen({ navigation }) {
                   value={professionalismScores.accurateRecordKeeping}
                   onValueChange={() => handleCheckboxChange('accurateRecordKeeping')}
                 />
-                <Text style={styles.checkboxLabel}>บันทึกข้อมูลผู้ป่วยอย่างถูกต้อง</Text>
+                <Text style={styles.checkboxLabel}>Accurately record patient information</Text>
               </View>
 
               <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 10 }}>Rating</Text>
@@ -798,14 +845,17 @@ function OpdScreen({ navigation }) {
                       <Text style={styles.checkboxLabel}>Acceptable</Text>
                     </View>
                     
+              <Text style={{marginBottom: 10, fontSize: 20, fontWeight: 'bold'}}>Add comment(optional)</Text>
               <TextInput
                 placeholder="Please enter a comment."
+                placeholderTextColor="grey"
                 value={comment}
                 onChangeText={setComment}
                 multiline
                 numberOfLines={4}
-                style={{ height: 80, width: '100%', borderColor: 'gray', borderWidth: 1, marginBottom: 20, textAlignVertical: 'top' }}
+                style={{ height: 150, width: '100%', borderColor: 'gray', borderWidth: 1, borderRadius: 10, marginBottom: 20, textAlignVertical: 'top' }}
               />
+
               <View style={styles.buttonContainer}>
                 <Pressable
                   style={[styles.recheckModalButton, styles.buttonApprove]}
@@ -997,31 +1047,31 @@ function OpdScreen({ navigation }) {
                   >
                     <View style={styles.centerView}>
                       <View style={styles.modalView}>
-                        <Text style={{ fontWeight: "bold", fontSize: 28, marginBottom: 10 }}>คะแนนความเป็นมืออาชีพ</Text>
+                        <Text style={{ fontWeight: "bold", fontSize: 28, marginBottom: 10 }}>Professionalism scores</Text>
                           {selectedPatient.professionalismScores && (
                             <>
                               <Text style={styles.modalText}>
-                                <Text style={{ fontWeight: "bold", fontSize: 20 }}>ตรงต่อเวลา : </Text>
+                                <Text style={{ fontWeight: "bold", fontSize: 20 }}>Punctual : </Text>
                                 {selectedPatient.professionalismScores.punctual ? '✔️' : '❌'}
                               </Text>
                               <Text style={styles.modalText}>
-                                <Text style={{ fontWeight: "bold", fontSize: 20 }}>การแต่งกายเหมาะสม : </Text>
+                                <Text style={{ fontWeight: "bold", fontSize: 20 }}>Appropriately dressed: </Text>
                                 {selectedPatient.professionalismScores.appropriatelyDressed ? '✔️' : '❌'}
                               </Text>
                               <Text style={styles.modalText}>
-                                <Text style={{ fontWeight: "bold", fontSize: 20 }}>เคารพผู้ป่วย : </Text>
+                                <Text style={{ fontWeight: "bold", fontSize: 20 }}>Respect the patient : </Text>
                                 {selectedPatient.professionalismScores.respectsPatients ? '✔️' : '❌'}
                               </Text>
                               <Text style={styles.modalText}>
-                                <Text style={{ fontWeight: "bold", fontSize: 20 }}>เป็นผู้ฟังที่ดี : </Text>
+                                <Text style={{ fontWeight: "bold", fontSize: 20 }}>Good listener : </Text>
                                 {selectedPatient.professionalismScores.goodListener ? '✔️' : '❌'}
                               </Text>
                               <Text style={styles.modalText}>
-                                <Text style={{ fontWeight: "bold", fontSize: 20 }}>ให้เกียรติเพื่อนร่วมงาน : </Text>
+                                <Text style={{ fontWeight: "bold", fontSize: 20 }}>Respect colleagues : </Text>
                                 {selectedPatient.professionalismScores.respectsColleagues ? '✔️' : '❌'}
                               </Text>
                               <Text style={styles.modalText}>
-                                <Text style={{ fontWeight: "bold", fontSize: 20 }}>บันทึกข้อมูลผู้ป่วยอย่างถูกต้อง : </Text>
+                                <Text style={{ fontWeight: "bold", fontSize: 20 }}>Accurately record patient information : </Text>
                                 {selectedPatient.professionalismScores.accurateRecordKeeping ? '✔️' : '❌'}
                               </Text>
                             </>
@@ -1031,7 +1081,7 @@ function OpdScreen({ navigation }) {
                           style={[styles.button, styles.buttonClose]}
                           onPress={() => setProfessionalismScoresModalVisible(!professionalismScoresModalVisible)}
                         >
-                          <Text style={styles.textStyle}>ปิดหน้าต่าง</Text>
+                          <Text style={styles.textStyle}>Close</Text>
                         </Pressable>
                         
                       </View>

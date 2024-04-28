@@ -14,7 +14,8 @@ import {
   Linking,
   Dimensions,
   TextInput,
-  CheckBox
+  CheckBox,
+  ActivityIndicator
 } from "react-native";
 import { SelectList } from "react-native-dropdown-select-list";
 import { useSelector } from "react-redux";
@@ -32,6 +33,7 @@ function ActivityScreen({ navigation }) {
   const [action, setAction] = useState(null);
   const currentUserUid = useSelector((state) => state.user.uid);
   const role = useSelector((state) => state.role);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [windowWidth, setWindowWidth] = useState(Dimensions.get('window').width);
   const [windowHeight, setWindowHeight] = useState(Dimensions.get('window').height);
@@ -89,7 +91,7 @@ function ActivityScreen({ navigation }) {
       width: isMobile ? "90%" : "90%", // ปรับแต่งความกว้างของ boxCard ตามอุปกรณ์
       marginLeft: isMobile ? "50" : "50",
       marginRight: isMobile ? "50" : "50",
-      marginTop: isMobile ? 10 : 50,
+      marginTop: isMobile ? 10 : 20,
     },
     card: {
       width: "95%",
@@ -310,6 +312,7 @@ function ActivityScreen({ navigation }) {
 
   const loadActivityData = async () => {
     try {
+      setIsLoading(true);
       const activityCollectionRef = collection(db, "activity");
       const userCollectionRef = collection(db, "users");
       const querySnapshot = await getDocs(activityCollectionRef);
@@ -339,7 +342,9 @@ function ActivityScreen({ navigation }) {
       }
 
       setActivityData(activities);
+      setIsLoading(false);
     } catch (error) {
+      setIsLoading(false);
       console.error("Error fetching activity data:", error);
     }
   };
@@ -473,6 +478,7 @@ function ActivityScreen({ navigation }) {
             shadowOpacity: 0.25,
             shadowRadius: 4,
             elevation: 5,
+            marginBottom: 10
           }}
         >
           <Text style={{ fontSize: 22, color: "white" }}>Approve all (for professor)</Text>
@@ -514,6 +520,14 @@ function ActivityScreen({ navigation }) {
   };
 
   const renderCards = () => {
+    if (isLoading) {
+      // แสดง animation loading หรือข้อความแสดงสถานะ loading
+      return (
+        <ActivityIndicator size="large" color="#0000ff" />
+        // หรือแสดงข้อความเพื่อแจ้งให้ผู้ใช้รู้ว่ากำลังโหลดข้อมูล
+        // <Text>Loading...</Text>
+      );
+    }
     return activityData
       .filter(activity => activity.status === selectedStatus) // กรองเฉพาะข้อมูลที่มีสถานะเป็น pending
       .sort((a, b) => b.admissionDate.toDate() - a.admissionDate.toDate()) // เรียงลำดับตามวันที่ล่าสุดไปยังเก่าสุด
@@ -695,14 +709,16 @@ function ActivityScreen({ navigation }) {
                       <Text style={{ marginLeft: 5 }}>Acceptable</Text>
                     </View>
 
-                      <TextInput
-                        placeholder="Please enter a comment."
-                          value={comment}
-                          onChangeText={setComment}
-                          multiline
-                          numberOfLines={4}
-                          style={{ height: 80, width: '100%', borderColor: 'gray', borderWidth: 1, marginBottom: 20, textAlignVertical: 'top' }}
-                      />
+                    <Text style={{marginBottom: 10, fontSize: 20, fontWeight: 'bold'}}>Add comment(optional)</Text>
+                    <TextInput
+                      placeholder="Please enter a comment."
+                      placeholderTextColor="grey"
+                      value={comment}
+                      onChangeText={setComment}
+                      multiline
+                      numberOfLines={4}
+                      style={{ height: 150, width: '100%', borderColor: 'gray', borderWidth: 1, borderRadius: 10, marginBottom: 20, textAlignVertical: 'top' }}
+                    />
                         
                         <View style={styles.buttonContainer}>
                             <Pressable

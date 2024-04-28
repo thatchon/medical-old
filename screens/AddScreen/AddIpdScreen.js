@@ -15,6 +15,8 @@ function AddIpdScreen({ navigation }) {
   const [mainDiagnosis, setMainDiagnosis] = useState(""); // ใช้ TextInput สำหรับ Main Diagnosis
   const [selectedDiagnosis, setSelectedDiagnosis] = useState([{}]); // เก็บโรคที่เลือกทั้งหมด
   const [mainDiagnoses, setMainDiagnoses] = useState([]); // เก็บรายชื่อโรค
+  const [otherDiagnosis, setOtherDiagnosis] = useState(""); // ใช้ TextInput สำหรับโรคอื่นๆ
+  const [isOtherSelected, setIsOtherSelected] = useState(false); // ตัวแปรสำหรับตรวจสอบว่าเลือก Other หรือไม่
 
   const [hn, setHN] = useState(""); // HN
   const [coMorbid, setCoMorbid] = useState(""); // Co-Morbid Diagnosis
@@ -211,8 +213,8 @@ const removeDiagnosis = (index) => {
       //   return;
       // }
 
-      if (!mainDiagnosis) {
-        alert("โปรดกรอก Main Diagnosis");
+      if (!mainDiagnosis && !otherDiagnosis) {
+        alert("โปรดกรอก Main Diagnosis หรือใส่โรคอื่นๆ");
         return;
       }
       
@@ -245,7 +247,7 @@ const removeDiagnosis = (index) => {
           coMorbid: selectedDiagnosis.length > 0 ? selectedDiagnosis : null,
           createBy_id: uid, // User ID
           hn: hn, // HN
-          mainDiagnosis: mainDiagnosis,
+          mainDiagnosis: isOtherSelected ? otherDiagnosis : mainDiagnosis,
           note: note, // Note
           patientType: patientType,
           professorName: professorName,
@@ -266,6 +268,9 @@ const removeDiagnosis = (index) => {
         setPdfFile(null);
         setSelectedHour("");
         setSelectedMinute("");
+        setMainDiagnosis("");
+        setOtherDiagnosis("");
+        setIsOtherSelected(false);
 
         // Display a success message or perform any other action
         alert("บันทึกข้อมูลสำเร็จ");
@@ -361,7 +366,6 @@ const removeDiagnosis = (index) => {
       </View>
     </View>
 
-
         <View>
           <Text style={{
             fontSize: 20,
@@ -369,10 +373,11 @@ const removeDiagnosis = (index) => {
             marginVertical: 8,
             textAlign: 'left'
 
-          }}>Main Diagnosis</Text>
+          }}>Main Diagnosis (ถ้าไม่มีตัวเลือก ให้เลือก Other)</Text>
         </View>
         
-        <View style={{
+        {isOtherSelected ? (
+            <View style={{
               height: 48,
               borderColor: '#FEF0E6',
               borderWidth: 1,
@@ -381,20 +386,37 @@ const removeDiagnosis = (index) => {
               justifyContent: 'left',
               marginVertical: 8,
             }}>
-          <TextInput
-              placeholder="Fill the main diagnosis"
-              placeholderTextColor="grey"
-              value={mainDiagnosis}
-              onChangeText={setMainDiagnosis}
-              style={{
-                width: '100%',
-                textAlign: 'center',
-                height: '100%',
-                fontSize: 20,
-                backgroundColor: '#FEF0E6'
+              <TextInput
+                placeholder="Fill the main diagnosis"
+                placeholderTextColor="grey"
+                value={otherDiagnosis}
+                onChangeText={setOtherDiagnosis}
+                style={{
+                  width: '100%',
+                  textAlign: 'center',
+                  height: '100%',
+                  fontSize: 20,
+                  backgroundColor: '#FEF0E6'
+                }}
+              />
+            </View>
+          ) : (
+            <SelectList
+              setSelected={(value) => {
+                if (value === "Other") {
+                  setIsOtherSelected(true);
+                  setMainDiagnosis("");
+                } else {
+                  setIsOtherSelected(false);
+                  setMainDiagnosis(value);
+                }
               }}
+              data={[...mainDiagnoses, { key: "Other", value: "Other" }]}
+              placeholder={"Select a diagnosis"}
+              boxStyles={{ width: 'auto', backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10  }}
+              dropdownStyles={{ backgroundColor: '#FEF0E6' }}
             />
-          </View>
+          )}
 
         <View>
           <Text style={{
