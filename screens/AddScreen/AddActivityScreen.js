@@ -1,12 +1,32 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Button, StyleSheet, TouchableOpacity, TextInput, Platform, ScrollView, Dimensions } from "react-native";
+import {
+  View,
+  Text,
+  Button,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  Platform,
+  ScrollView,
+  Dimensions,
+} from "react-native";
 import { SelectList } from "react-native-dropdown-select-list";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useSelector } from "react-redux";
-import { db, auth, storage } from '../../data/firebaseDB'
-import { getDocs, addDoc, collection, query, where, Timestamp, updateDoc, doc, getDoc } from "firebase/firestore";
+import { db, auth, storage } from "../../data/firebaseDB";
+import {
+  getDocs,
+  addDoc,
+  collection,
+  query,
+  where,
+  Timestamp,
+  updateDoc,
+  doc,
+  getDoc,
+} from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
-import SubHeader from '../../component/SubHeader';  
+import SubHeader from "../../component/SubHeader";
 
 function AddActivityScreen({ navigation }) {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -35,19 +55,25 @@ function AddActivityScreen({ navigation }) {
 
   const [uploadedImages, setUploadedImages] = useState([]);
 
-  const [dimensions, setDimensions] = useState(Dimensions.get('window'));
+  const [dimensions, setDimensions] = useState(Dimensions.get("window"));
   const subject = useSelector((state) => state.subject);
 
-  const hours = Array.from({ length: 24 }, (_, i) => ({ key: i.toString(), value: i.toString() }));
-  const minutes = Array.from({ length: 60 }, (_, i) => ({ key: i.toString(), value: i.toString() }));
+  const hours = Array.from({ length: 24 }, (_, i) => ({
+    key: i.toString(),
+    value: i.toString(),
+  }));
+  const minutes = Array.from({ length: 60 }, (_, i) => ({
+    key: i.toString(),
+    value: i.toString(),
+  }));
 
   useEffect(() => {
     const updateLayout = () => {
-      setDimensions(Dimensions.get('window'));
+      setDimensions(Dimensions.get("window"));
     };
 
-    Dimensions.addEventListener('change', updateLayout);
-    return () => Dimensions.removeEventListener('change', updateLayout);
+    Dimensions.addEventListener("change", updateLayout);
+    return () => Dimensions.removeEventListener("change", updateLayout);
   }, []);
 
   const styles = StyleSheet.create({
@@ -63,49 +89,49 @@ function AddActivityScreen({ navigation }) {
     },
     uploadTitle: {
       fontSize: 20,
-      fontWeight: '400',
+      fontWeight: "400",
       marginVertical: 8,
-      textAlign: 'left'
+      textAlign: "left",
     },
     dropzone: {
       height: 50,
-      borderColor: 'gray',
+      borderColor: "gray",
       borderWidth: 1,
       borderRadius: 8,
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexDirection: 'row'
+      alignItems: "center",
+      justifyContent: "center",
+      flexDirection: "row",
     },
     uploadedFileName: {
       marginLeft: 10,
     },
     modalContainer: {
       flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
     },
     modalImage: {
-      width: '90%',
-      height: 'auto',
+      width: "90%",
+      height: "auto",
       marginVertical: 10,
       borderRadius: 10,
     },
     imageText: {
       fontSize: 18,
       marginTop: 10,
-      textAlign: 'center',
-      color: 'blue'
+      textAlign: "center",
+      color: "blue",
     },
   });
 
   const selectImages = (event) => {
     const files = event.target.files;
     if (files) {
-        const imagesArray = Array.from(files);
-        setUploadedImages(imagesArray);
+      const imagesArray = Array.from(files);
+      setUploadedImages(imagesArray);
     }
-  }
+  };
 
   const uploadImages = async (uploadedImages, docId) => {
     const storageURLs = [];
@@ -115,7 +141,7 @@ function AddActivityScreen({ navigation }) {
       const downloadURL = await getDownloadURL(imageRef);
       storageURLs.push(downloadURL);
     });
-  
+
     await Promise.all(uploadPromises);
     return storageURLs;
   };
@@ -140,8 +166,8 @@ function AddActivityScreen({ navigation }) {
             padding: 10,
             fontSize: 16,
             width: "95%",
-            backgroundColor: '#FEF0E6',
-            borderColor: '#FEF0E6',
+            backgroundColor: "#FEF0E6",
+            borderColor: "#FEF0E6",
             borderWidth: 1,
             borderRadius: 10,
           }}
@@ -168,17 +194,18 @@ function AddActivityScreen({ navigation }) {
     }
   };
 
-
   const onSelectTeacher = (selectedTeacherId) => {
-    const selectedTeacher = teachers.find(teacher => teacher.key === selectedTeacherId);
+    const selectedTeacher = teachers.find(
+      (teacher) => teacher.key === selectedTeacherId
+    );
     // console.log(selectedTeacher)
     if (selectedTeacher) {
       setProfessorName(selectedTeacher.value);
       setProfessorId(selectedTeacher.key);
     } else {
-      console.error('Teacher not found:', selectedTeacherId);
+      console.error("Teacher not found:", selectedTeacherId);
     }
-  }
+  };
 
   useEffect(() => {
     async function fetchTeachers() {
@@ -205,18 +232,22 @@ function AddActivityScreen({ navigation }) {
 
   const fetchMainDiagnoses = async () => {
     try {
-      const mainDiagnosisDocRef = doc(db, "mainDiagnosis", "LcvLDMSEraOH9zH4fbmS");
+      const mainDiagnosisDocRef = doc(
+        db,
+        "mainDiagnosis",
+        "LcvLDMSEraOH9zH4fbmS"
+      );
       const docSnap = await getDoc(mainDiagnosisDocRef);
-  
+
       if (docSnap.exists()) {
         const data = docSnap.data();
         const diagnoses = data.diseases.map((disease, index) => ({
-          key: `${(index + 1).toString().padStart(3, '0')} | ${disease}`, // ปรับแก้ที่นี่เพื่อให้ key เป็นชื่อโรคด้วย
-          value: `${(index + 1).toString().padStart(3, '0')} | ${disease}`
+          key: `${(index + 1).toString().padStart(3, "0")} | ${disease}`, // ปรับแก้ที่นี่เพื่อให้ key เป็นชื่อโรคด้วย
+          value: `${(index + 1).toString().padStart(3, "0")} | ${disease}`,
         }));
-  
+
         diagnoses.sort((a, b) => a.value.localeCompare(b.value));
-  
+
         setMainDiagnoses(diagnoses);
       } else {
         console.log("No such document!");
@@ -224,8 +255,8 @@ function AddActivityScreen({ navigation }) {
     } catch (error) {
       console.error("Error fetching main diagnoses:", error);
     }
-  }
-  
+  };
+
   useEffect(() => {
     fetchMainDiagnoses();
   }, []);
@@ -235,7 +266,7 @@ function AddActivityScreen({ navigation }) {
       try {
         const activityTypeRef = collection(db, "activity_type");
         const querySnapshot = await getDocs(activityTypeRef);
-  
+
         const activityArray = [];
         querySnapshot.forEach((doc) => {
           const data = doc.data();
@@ -243,29 +274,28 @@ function AddActivityScreen({ navigation }) {
             activityArray.push({ key: activity, value: activity });
           });
         });
-  
+
         setActivityType(activityArray);
       } catch (error) {
         console.error("Error fetching activity:", error);
       }
     }
-  
+
     fetchActivityType();
   }, []);
 
   const saveDataToFirestore = async () => {
     try {
-
       if (!mainDiagnosis && !otherDiagnosis) {
         alert("โปรดกรอก Main Diagnosis หรือใส่โรคอื่นๆ");
         return;
       }
-      
+
       if (!selectedActivityType) {
         alert("โปรดเลือกประเภท");
         return;
       }
-  
+
       if (!selectedDate) {
         alert("โปรดเลือกวันที่รับผู้ป่วย");
         return;
@@ -286,9 +316,9 @@ function AddActivityScreen({ navigation }) {
         alert("ไม่พบข้อมูลผู้ใช้");
         return;
       }
-  
+
       const timestamp = Timestamp.fromDate(selectedDate);
-  
+
       // Step 1: Save patient data (excluding images) and retrieve the Document ID
       const docRef = await addDoc(collection(db, "activity"), {
         admissionDate: timestamp,
@@ -302,13 +332,13 @@ function AddActivityScreen({ navigation }) {
         images: [], // We'll store the image URLs in the next step
         hours: selectedHour,
         minutes: selectedMinute,
-        subject
+        subject,
       });
-  
+
       // Step 2: Use the Document ID as a folder name for image uploads and then update image URLs in Firestore
       const imageUrls = await uploadImages(uploadedImages, docRef.id);
       await updateDoc(docRef, { images: imageUrls });
-  
+
       // Clear the input fields and states
       setSelectedDate(new Date());
       setMainDiagnosis("");
@@ -318,7 +348,7 @@ function AddActivityScreen({ navigation }) {
       setNote("");
       setSelectedHour("");
       setSelectedMinute("");
-  
+
       alert("บันทึกข้อมูลสำเร็จ");
     } catch (error) {
       console.error("Error adding document: ", error);
@@ -329,196 +359,285 @@ function AddActivityScreen({ navigation }) {
   return (
     <ScrollView>
       <View style={styles.container}>
-
-        <View style={{marginVertical: dimensions.width < 768 ? 40 : 60,}}>
+        <View style={{ marginVertical: dimensions.width < 768 ? 40 : 60 }}>
           <SubHeader text="ADD ACTIVITY" />
         </View>
 
-        <View style={{ flexDirection: dimensions.width < 768 ? 'column' : 'row', alignItems: 'left', marginBottom: 16, justifyContent: 'space-between' }}>
-          <View style={{ width: dimensions.width < 768 ? '100%' : '45%' }}>
-            <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left' }}>Activity Date</Text>
+        <View
+          style={{
+            flexDirection: dimensions.width < 768 ? "column" : "row",
+            alignItems: "left",
+            marginBottom: 16,
+            justifyContent: "space-between",
+          }}
+        >
+          <View style={{ width: dimensions.width < 768 ? "100%" : "45%" }}>
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: 400,
+                marginVertical: 8,
+                textAlign: "left",
+              }}
+            >
+              Activity Date
+            </Text>
             <DateInput />
           </View>
-          <View style={{ width: dimensions.width < 768 ? '100%' : '45%', flexDirection: 'row', justifyContent: 'left', alignItems: 'left' }}>
+          <View
+            style={{
+              width: dimensions.width < 768 ? "100%" : "45%",
+              flexDirection: "row",
+              justifyContent: "left",
+              alignItems: "left",
+            }}
+          >
             <View>
-              <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left' }}>Activity Time</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'left' }}>
+              <Text
+                style={{
+                  fontSize: 20,
+                  fontWeight: 400,
+                  marginVertical: 8,
+                  textAlign: "left",
+                }}
+              >
+                Activity Time
+              </Text>
+              <View style={{ flexDirection: "row", alignItems: "left" }}>
                 <SelectList
                   setSelected={setSelectedHour}
                   data={hours}
                   placeholder="Hours"
                   search={false}
-                  boxStyles={{ width: 'auto', backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10 }}
-                  dropdownStyles={{ backgroundColor: '#FEF0E6' }}
+                  boxStyles={{
+                    width: "auto",
+                    backgroundColor: "#FEF0E6",
+                    borderColor: "#FEF0E6",
+                    borderWidth: 1,
+                    borderRadius: 10,
+                  }}
+                  dropdownStyles={{ backgroundColor: "#FEF0E6" }}
                 />
-                <Text style={{ marginHorizontal: 5, alignSelf: 'center' }}>:</Text>
+                <Text style={{ marginHorizontal: 5, alignSelf: "center" }}>
+                  :
+                </Text>
                 <SelectList
                   setSelected={setSelectedMinute}
                   data={minutes}
                   placeholder="Minutes"
                   search={false}
-                  boxStyles={{ width: 'auto', backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10  }}
-                  dropdownStyles={{ backgroundColor: '#FEF0E6' }}
+                  boxStyles={{
+                    width: "auto",
+                    backgroundColor: "#FEF0E6",
+                    borderColor: "#FEF0E6",
+                    borderWidth: 1,
+                    borderRadius: 10,
+                  }}
+                  dropdownStyles={{ backgroundColor: "#FEF0E6" }}
                 />
               </View>
             </View>
-        </View>
-      </View>
-
-      <View style={{ flexDirection: dimensions.width < 768 ? 'column' : 'row', justifyContent: 'space-between', marginBottom: 16 }}>
-        <View style={{ width: dimensions.width < 768 ? '100%' : '45%' }}>
-          <Text style={{
-            fontSize: 20,
-            fontWeight: 400,
-            marginVertical: 8,
-            textAlign: 'left'
-
-          }}>Activity Type</Text>
-          <SelectList
-            setSelected={setSelectedActivityType}
-            data={activityType}
-            placeholder={"Select activity type"}
-            boxStyles={{ width: 'auto', backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10  }}
-            dropdownStyles={{ backgroundColor: '#FEF0E6' }}
-          />
+          </View>
         </View>
 
-        <View style={{ width: dimensions.width < 768 ? '100%' : '45%' }}>
-          <Text style={{
-            fontSize: 20, 
-            fontWeight: 400,
-            marginVertical: 8, 
-            textAlign: 'left', 
-            alignItems: 'flex-start' 
-            
-            }}>Professor</Text>
+        <View
+          style={{
+            flexDirection: dimensions.width < 768 ? "column" : "row",
+            justifyContent: "space-between",
+            marginBottom: 16,
+          }}
+        >
+          <View style={{ width: dimensions.width < 768 ? "100%" : "45%" }}>
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: 400,
+                marginVertical: 8,
+                textAlign: "left",
+              }}
+            >
+              Activity Type
+            </Text>
+            <SelectList
+              setSelected={setSelectedActivityType}
+              data={activityType}
+              placeholder={"Select activity type"}
+              boxStyles={{
+                width: "auto",
+                backgroundColor: "#FEF0E6",
+                borderColor: "#FEF0E6",
+                borderWidth: 1,
+                borderRadius: 10,
+              }}
+              dropdownStyles={{ backgroundColor: "#FEF0E6" }}
+            />
+          </View>
+
+          <View style={{ width: dimensions.width < 768 ? "100%" : "45%" }}>
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: 400,
+                marginVertical: 8,
+                textAlign: "left",
+                alignItems: "flex-start",
+              }}
+            >
+              Professor
+            </Text>
             <SelectList
               setSelected={onSelectTeacher}
               data={teachers}
               placeholder={"Select the professor name"}
               placeholderTextColor="grey"
-              boxStyles={{ width: 'auto', backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10  }}
-              dropdownStyles={{ backgroundColor: '#FEF0E6' }}
+              boxStyles={{
+                width: "auto",
+                backgroundColor: "#FEF0E6",
+                borderColor: "#FEF0E6",
+                borderWidth: 1,
+                borderRadius: 10,
+              }}
+              dropdownStyles={{ backgroundColor: "#FEF0E6" }}
             />
+          </View>
         </View>
-      </View>
 
-        <View style={{ marginBottom: 16, width: '70%' }}>
-          <Text style={{
-            fontSize: 20,
-            fontWeight: 400,
-            marginVertical: 8,
-            textAlign: 'left'
-
-          }}>Topic (ถ้าไม่มีตัวเลือก ให้เลือก Other)</Text>
+        <View style={{ marginBottom: 16, width: "70%" }}>
+          <Text
+            style={{
+              fontSize: 20,
+              fontWeight: 400,
+              marginVertical: 8,
+              textAlign: "left",
+            }}
+          >
+            Topic (ถ้าไม่มีตัวเลือก ให้เลือก Other)
+          </Text>
           {isOtherSelected ? (
+            <View
+              style={{
+                height: 48,
+                borderColor: "#FEF0E6",
+                borderWidth: 1,
+                borderRadius: 10,
+                alignItems: "left",
+                justifyContent: "left",
+                marginVertical: 8,
+              }}
+            >
+              <TextInput
+                placeholder="Fill the main diagnosis"
+                placeholderTextColor="grey"
+                value={otherDiagnosis}
+                onChangeText={setOtherDiagnosis}
+                style={{
+                  width: "100%",
+                  textAlign: "center",
+                  height: "100%",
+                  fontSize: 20,
+                  backgroundColor: "#FEF0E6",
+                }}
+              />
+            </View>
+          ) : (
+            <SelectList
+              setSelected={(value) => {
+                if (value === "Other") {
+                  setIsOtherSelected(true);
+                  setMainDiagnosis("");
+                } else {
+                  setIsOtherSelected(false);
+                  setMainDiagnosis(value);
+                }
+              }}
+              data={[...mainDiagnoses, { key: "Other", value: "Other" }]}
+              placeholder={"Select a diagnosis"}
+              boxStyles={{
+                width: "auto",
+                backgroundColor: "#FEF0E6",
+                borderColor: "#FEF0E6",
+                borderWidth: 1,
+                borderRadius: 10,
+              }}
+              dropdownStyles={{ backgroundColor: "#FEF0E6" }}
+            />
+          )}
+        </View>
+
+        <View style={{ marginBottom: 16, width: "70%" }}>
+          <Text
+            style={{
+              fontSize: 20,
+              fontWeight: 400,
+              marginVertical: 8,
+              textAlign: "left",
+            }}
+          >
+            Note / Reflection (optional)
+          </Text>
           <View
             style={{
-              height: 48,
+              height: 260,
               borderColor: "#FEF0E6",
               borderWidth: 1,
               borderRadius: 10,
-              alignItems: "left",
-              justifyContent: "left",
-              marginVertical: 8,
+              backgroundColor: "#FEF0E6",
             }}
           >
             <TextInput
-              placeholder="Fill the main diagnosis"
+              placeholder={isFocused ? "" : "Fill a note/reflection"}
               placeholderTextColor="grey"
-              value={otherDiagnosis}
-              onChangeText={setOtherDiagnosis}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(note.length > 0)}
+              value={note}
+              onChangeText={setNote}
+              multiline
               style={{
                 width: "100%",
-                textAlign: "center",
                 height: "100%",
+                textAlign: "left", // ตั้งค่าให้ข้อความจัดชิดซ้าย
+                textAlignVertical: "top", // ตั้งค่าให้ข้อความเริ่มที่บน
+                paddingTop: 8, // พิจารณาเพิ่ม padding ด้านบน
+                paddingLeft: 8, // พิจารณาเพิ่ม padding ด้านซ้าย
                 fontSize: 20,
-                backgroundColor: "#FEF0E6",
               }}
+            ></TextInput>
+          </View>
+        </View>
+
+        {/* UI for image upload */}
+        <View style={styles.uploadContainer}>
+          <Text style={styles.uploadTitle}>
+            Upload Image ( Unable to support files larger than 5 MB.) (Optional)
+          </Text>
+          <View style={styles.dropzone}>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={selectImages}
             />
           </View>
-        ) : (
-          <SelectList
-            setSelected={(value) => {
-              if (value === "Other") {
-                setIsOtherSelected(true);
-                setMainDiagnosis("");
-              } else {
-                setIsOtherSelected(false);
-                setMainDiagnosis(value);
-              }
-            }}
-            data={[...mainDiagnoses, { key: "Other", value: "Other" }]}
-            placeholder={"Select a diagnosis"}
-            boxStyles={{
-              width: "auto",
-              backgroundColor: "#FEF0E6",
-              borderColor: "#FEF0E6",
-              borderWidth: 1,
-              borderRadius: 10,
-            }}
-            dropdownStyles={{ backgroundColor: "#FEF0E6" }}
-          />
-        )}
         </View>
 
-        <View style={{ marginBottom: 16, width: '70%', }}>
-          <Text style={{
-            fontSize: 20,
-            fontWeight: 400,
-            marginVertical: 8,
-            textAlign: 'left'
-
-          }}>Note / Reflection (optional)</Text>
-        <View style={{
-          height: 260,
-          borderColor: '#FEF0E6',
-          borderWidth: 1,
-          borderRadius: 10,
-          backgroundColor: '#FEF0E6'
-        }}>
-          <TextInput
-                placeholder={isFocused ? '' : "Fill a note/reflection"}
-                placeholderTextColor="grey"
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(note.length > 0)}
-                value={note}
-                onChangeText={setNote}
-                multiline
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  textAlign: 'left', // ตั้งค่าให้ข้อความจัดชิดซ้าย
-                  textAlignVertical: 'top', // ตั้งค่าให้ข้อความเริ่มที่บน
-                  paddingTop: 8, // พิจารณาเพิ่ม padding ด้านบน
-                  paddingLeft: 8, // พิจารณาเพิ่ม padding ด้านซ้าย
-                  fontSize: 20
-                }}
-          ></TextInput>
-          </View>
-        </View>
-
-    {/* UI for image upload */}
-    <View style={styles.uploadContainer}>
-        <Text style={styles.uploadTitle}>
-          Upload Image ( Unable to support files larger than 5 MB.)
-(Optional)</Text>
-        <View style={styles.dropzone}>
-          <input type="file" accept="image/*" multiple onChange={selectImages} />
-        </View>
-      </View>
-
-      <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: '20%' }}>
-        <TouchableOpacity
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "center",
+            alignItems: "center",
+            marginBottom: "20%",
+          }}
+        >
+          <TouchableOpacity
             onPress={saveDataToFirestore}
             style={{
               height: 48,
               width: 120,
-              justifyContent: 'center',
-              alignItems: 'center',
-              backgroundColor: '#008000',
+              justifyContent: "center",
+              alignItems: "center",
+              backgroundColor: "#008000",
               borderRadius: 30,
-              shadowColor: '#000',
+              shadowColor: "#000",
               shadowOffset: {
                 width: 0,
                 height: 2,
@@ -526,10 +645,10 @@ function AddActivityScreen({ navigation }) {
               shadowOpacity: 0.25,
               shadowRadius: 4,
               elevation: 5,
-              marginRight: 20
+              marginRight: 20,
             }}
           >
-            <Text style={{ fontSize: 20, color: 'white' }}>Save</Text>
+            <Text style={{ fontSize: 20, color: "white" }}>Save</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
@@ -537,11 +656,11 @@ function AddActivityScreen({ navigation }) {
               height: 48,
               width: 120,
               marginRight: 10,
-              justifyContent: 'center',
-              alignItems: 'center',
-              backgroundColor: 'grey',
+              justifyContent: "center",
+              alignItems: "center",
+              backgroundColor: "grey",
               borderRadius: 30,
-              shadowColor: '#000',
+              shadowColor: "#000",
               shadowOffset: {
                 width: 0,
                 height: 2,
@@ -551,12 +670,12 @@ function AddActivityScreen({ navigation }) {
               elevation: 5,
             }}
           >
-            <Text style={{ fontSize: 20, color: 'white' }}>Back</Text>
+            <Text style={{ fontSize: 20, color: "white" }}>Back</Text>
           </TouchableOpacity>
         </View>
       </View>
     </ScrollView>
-    );
-  }
+  );
+}
 
 export default AddActivityScreen;

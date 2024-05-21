@@ -65,21 +65,48 @@ function ProcedureScreen({ navigation }) {
 
   const [selectedSubject, setSelectedSubject] = useState("All");
   const subjectsByYear = [
-    { key: "All", value: "All"},
-    { key: "Family medicine clerkship", value: "Family medicine clerkship"},
-    { key: "Internal medicine clerkship", value: "Internal medicine clerkship"},
-    { key: "Surgery clerkship", value: "Surgery clerkship"},
-    { key: "Anesthesiology, cardiology and critical care medicine clerkship", value: "Anesthesiology, cardiology and critical care medicine clerkship"},
-    { key: "Obstetrics and gynecology clerkship", value: "Obstetrics and gynecology clerkship"},
-    { key: "Ambulatory medicine clerkship", value: "Ambulatory medicine clerkship"},
-    { key: "Accident and emergency medicine clerkship", value: "Accident and emergency medicine clerkship"},
-    { key: "Oncology and palliative medicine clerkship", value: "Oncology and palliative medicine clerkship"},
-    { key: "Practicum in internal medicine", value: "Practicum in internal medicine"},
-    { key: "Practicum in surgery", value: "Practicum in surgery"},
-    { key: "Practicum in Pediatrics", value: "Practicum in Pediatrics"},
-    { key: "Practicum in Obstetrics and gynecology", value: "Practicum in Obstetrics and gynecology"},
-    { key: "Practicum in orthopedics and emergency medicine", value: "Practicum in orthopedics and emergency medicine"}
-];
+    { key: "All", value: "All" },
+    { key: "Family medicine clerkship", value: "Family medicine clerkship" },
+    {
+      key: "Internal medicine clerkship",
+      value: "Internal medicine clerkship",
+    },
+    { key: "Surgery clerkship", value: "Surgery clerkship" },
+    {
+      key: "Anesthesiology, cardiology and critical care medicine clerkship",
+      value: "Anesthesiology, cardiology and critical care medicine clerkship",
+    },
+    {
+      key: "Obstetrics and gynecology clerkship",
+      value: "Obstetrics and gynecology clerkship",
+    },
+    {
+      key: "Ambulatory medicine clerkship",
+      value: "Ambulatory medicine clerkship",
+    },
+    {
+      key: "Accident and emergency medicine clerkship",
+      value: "Accident and emergency medicine clerkship",
+    },
+    {
+      key: "Oncology and palliative medicine clerkship",
+      value: "Oncology and palliative medicine clerkship",
+    },
+    {
+      key: "Practicum in internal medicine",
+      value: "Practicum in internal medicine",
+    },
+    { key: "Practicum in surgery", value: "Practicum in surgery" },
+    { key: "Practicum in Pediatrics", value: "Practicum in Pediatrics" },
+    {
+      key: "Practicum in Obstetrics and gynecology",
+      value: "Practicum in Obstetrics and gynecology",
+    },
+    {
+      key: "Practicum in orthopedics and emergency medicine",
+      value: "Practicum in orthopedics and emergency medicine",
+    },
+  ];
 
   const [searchText, setSearchText] = useState("");
   const [filteredProcedureData, setFilteredProcedureData] = useState([]); // state เก็บข้อมูลผู้ใช้ที่ผ่านการกรอง
@@ -163,20 +190,22 @@ function ProcedureScreen({ navigation }) {
 
   useEffect(() => {
     if (selectedProcedure) {
-      if (selectedStatus === 'reApproved') {
-        setComment(selectedProcedure.comment || '');
-        setRating(selectedProcedure.rating || '');
-        setProfessionalismScores(selectedProcedure.professionalismScores || {
-          punctual: false,
-          appropriatelyDressed: false,
-          respectsProcedures: false,
-          goodListener: false,
-          respectsColleagues: false,
-          accurateRecordKeeping: false,
-        });
-      } else if (selectedStatus === 'pending') {
-        setComment('');
-        setRating('');
+      if (selectedStatus === "reApproved") {
+        setComment(selectedProcedure.comment || "");
+        setRating(selectedProcedure.rating || "");
+        setProfessionalismScores(
+          selectedProcedure.professionalismScores || {
+            punctual: false,
+            appropriatelyDressed: false,
+            respectsProcedures: false,
+            goodListener: false,
+            respectsColleagues: false,
+            accurateRecordKeeping: false,
+          }
+        );
+      } else if (selectedStatus === "pending") {
+        setComment("");
+        setRating("");
         setProfessionalismScores({
           punctual: false,
           appropriatelyDressed: false,
@@ -187,12 +216,12 @@ function ProcedureScreen({ navigation }) {
         });
       }
     }
-  }, [selectedStatus, selectedProcedure]);  
+  }, [selectedStatus, selectedProcedure]);
 
   const isEditable = () => {
-    if (selectedStatus === 'pending') {
+    if (selectedStatus === "pending") {
       return true;
-    } else if (selectedStatus === 'reApproved') {
+    } else if (selectedStatus === "reApproved") {
       return selectedProcedure ? selectedProcedure.isEdited : false;
     }
     return false;
@@ -425,7 +454,7 @@ function ProcedureScreen({ navigation }) {
     },
     checkboxLabel: {
       marginLeft: 10,
-      fontSize: 20
+      fontSize: 20,
     },
     buttonProfessional: {
       backgroundColor: "blue", // สีที่คุณต้องการ
@@ -551,7 +580,6 @@ function ProcedureScreen({ navigation }) {
     navigation.navigate("AddProcedure");
   };
 
-
   const handleApprove = async () => {
     try {
       const procedureDocRef = doc(db, "procedures", selectedProcedure.id);
@@ -580,7 +608,7 @@ function ProcedureScreen({ navigation }) {
         reApprovalTimestamp: Timestamp.now(),
         professionalismScores: professionalismScores, // บันทึกคะแนนความเป็นมืออาชีพ
         isReApproved: true,
-        isEdited: false
+        isEdited: false,
       });
       // รีเซ็ตคะแนนและความคิดเห็น
       resetScoresAndComment();
@@ -742,9 +770,15 @@ function ProcedureScreen({ navigation }) {
       );
     }
     return filteredProcedureData
-      .filter((procedure) => selectedSubject === "All" || (procedure.subject && procedure.subject === selectedSubject))
+      .filter(
+        (procedure) =>
+          selectedSubject === "All" ||
+          (procedure.subject && procedure.subject === selectedSubject)
+      )
       .filter((procedure) => procedure.status === selectedStatus) // กรองเฉพาะข้อมูลที่มีสถานะเป็น pending
-      .filter((procedure) => role === 'student' ? procedure.subject === subject : true)
+      .filter((procedure) =>
+        role === "student" ? procedure.subject === subject : true
+      )
       .sort((a, b) => b.admissionDate.toDate() - a.admissionDate.toDate()) // เรียงลำดับตามวันที่ล่าสุดไปยังเก่าสุด
       .map((procedure, index) => (
         <TouchableOpacity
@@ -756,9 +790,24 @@ function ProcedureScreen({ navigation }) {
             <View style={styles.leftContainer}>
               {role === "student" ? (
                 <>
-                  <Text style={{ fontSize: 20, fontWeight: "bold", marginLeft: 20, lineHeight: 30 }}>
+                  <Text
+                    style={{
+                      fontSize: 20,
+                      fontWeight: "bold",
+                      marginLeft: 20,
+                      lineHeight: 30,
+                    }}
+                  >
                     HN : {procedure.hn} (
-                    <Text style={{ color: procedure.isEdited ? 'red' : procedure.isEdited === false ? '#e9c46a' : 'inherit' }}>
+                    <Text
+                      style={{
+                        color: procedure.isEdited
+                          ? "red"
+                          : procedure.isEdited === false
+                          ? "#e9c46a"
+                          : "inherit",
+                      }}
+                    >
                       {procedure.status}
                     </Text>
                     )
@@ -856,9 +905,24 @@ function ProcedureScreen({ navigation }) {
                 </>
               ) : (
                 <>
-                  <Text style={{ fontSize: 20, fontWeight: "bold", marginLeft: 20, lineHeight: 30 }}>
+                  <Text
+                    style={{
+                      fontSize: 20,
+                      fontWeight: "bold",
+                      marginLeft: 20,
+                      lineHeight: 30,
+                    }}
+                  >
                     HN : {procedure.hn} (
-                    <Text style={{ color: procedure.isEdited ? 'red' : procedure.isEdited === false ? '#e9c46a' : 'inherit' }}>
+                    <Text
+                      style={{
+                        color: procedure.isEdited
+                          ? "red"
+                          : procedure.isEdited === false
+                          ? "#e9c46a"
+                          : "inherit",
+                      }}
+                    >
                       {procedure.status}
                     </Text>
                     )
@@ -979,11 +1043,11 @@ function ProcedureScreen({ navigation }) {
       <View
         style={{
           marginVertical: 10,
-          flexDirection: isMobile ? 'column' : 'row',
+          flexDirection: isMobile ? "column" : "row",
           alignItems: "center",
         }}
       >
-        {role !== 'student' && (
+        {role !== "student" && (
           <SelectList
             data={subjectsByYear}
             setSelected={setSelectedSubject}
@@ -1015,7 +1079,7 @@ function ProcedureScreen({ navigation }) {
             borderColor: "#FEF0E6",
             borderWidth: 1,
             borderRadius: 10,
-            marginBottom: isMobile ? 10 : 0
+            marginBottom: isMobile ? 10 : 0,
           }}
           dropdownStyles={{ backgroundColor: "#FEF0E6" }}
         />
@@ -1029,7 +1093,7 @@ function ProcedureScreen({ navigation }) {
             borderRadius: 10,
             padding: 12,
             marginLeft: isMobile ? 0 : 15,
-            textAlign: 'center'
+            textAlign: "center",
           }}
           placeholder="Search by hn"
           value={searchText}
@@ -1136,9 +1200,9 @@ function ProcedureScreen({ navigation }) {
       </Modal>
 
       <View style={styles.boxCard}>
-      {role === 'student' && (
+        {role === "student" && (
           <Text style={styles.modalText}>
-            <Text style={{ fontWeight: 'bold' }}>{subject}</Text>
+            <Text style={{ fontWeight: "bold" }}>{subject}</Text>
           </Text>
         )}
         <ScrollView>{renderCards()}</ScrollView>
@@ -1192,11 +1256,13 @@ function ProcedureScreen({ navigation }) {
             <ScrollView>
               {selectedProcedure && (
                 <>
-                {role !== 'student' && selectedProcedure.subject ? (
-                      <Text style={styles.modalText2}>
-                        <Text style={{ fontWeight: 'bold' }}>{selectedProcedure.subject}</Text>
+                  {role !== "student" && selectedProcedure.subject ? (
+                    <Text style={styles.modalText2}>
+                      <Text style={{ fontWeight: "bold" }}>
+                        {selectedProcedure.subject}
                       </Text>
-                    ) : null}
+                    </Text>
+                  ) : null}
                   <Text style={styles.modalText}>
                     <Text style={{ fontWeight: "bold" }}>
                       Admission Date :{" "}
@@ -1242,7 +1308,8 @@ function ProcedureScreen({ navigation }) {
 
                   {(selectedStatus === "approved" ||
                     selectedStatus === "rejected" ||
-                    (selectedStatus === "reApproved" && role === "student")) && (
+                    (selectedStatus === "reApproved" &&
+                      role === "student")) && (
                     <Text style={styles.modalText}>
                       <Text style={{ fontWeight: "bold" }}>Rating : </Text>
                       {selectedProcedure.rating || "ไม่มี"}
@@ -1251,17 +1318,19 @@ function ProcedureScreen({ navigation }) {
 
                   {(selectedStatus === "approved" ||
                     selectedStatus === "rejected" ||
-                    (selectedStatus === "reApproved" && role === "student")) && (
+                    (selectedStatus === "reApproved" &&
+                      role === "student")) && (
                     <Text style={styles.modalText}>
                       <Text style={{ fontWeight: "bold" }}>***Comment : </Text>
                       {selectedProcedure.comment || "ไม่มี"}
                     </Text>
                   )}
-                  
+
                   <View style={styles.buttonRow}>
-                  {(selectedStatus === "approved" ||
-                    selectedStatus === "rejected" ||
-                    (selectedStatus === "reApproved" && role === "student")) && (
+                    {(selectedStatus === "approved" ||
+                      selectedStatus === "rejected" ||
+                      (selectedStatus === "reApproved" &&
+                        role === "student")) && (
                       <Pressable
                         style={[styles.button, styles.buttonProfessional]}
                         onPress={() =>
@@ -1280,74 +1349,95 @@ function ProcedureScreen({ navigation }) {
                         <View style={styles.centerView2}>
                           <Text style={styles.professionalismHeader}>
                             Professionalism
-                          </Text>{" "}(เลือกได้หลายตัวเลือก)
+                          </Text>{" "}
+                          (เลือกได้หลายตัวเลือก)
                           {/* แสดง Checkbox และ Label */}
                           {selectedProcedure && (
                             <View style={styles.checkboxContainer}>
                               <CheckBox
                                 value={professionalismScores.punctual}
                                 disabled={!isEditable()}
-                                onValueChange={() => handleCheckboxChange("punctual")}
+                                onValueChange={() =>
+                                  handleCheckboxChange("punctual")
+                                }
                               />
                               <Text style={styles.checkboxLabel}>Punctual</Text>
                             </View>
                           )}
-
                           {selectedProcedure && (
                             <View style={styles.checkboxContainer}>
                               <CheckBox
-                                value={professionalismScores.appropriatelyDressed}
+                                value={
+                                  professionalismScores.appropriatelyDressed
+                                }
                                 disabled={!isEditable()}
-                                onValueChange={() => handleCheckboxChange("appropriatelyDressed")}
+                                onValueChange={() =>
+                                  handleCheckboxChange("appropriatelyDressed")
+                                }
                               />
-                              <Text style={styles.checkboxLabel}>Appropriately dressed</Text>
+                              <Text style={styles.checkboxLabel}>
+                                Appropriately dressed
+                              </Text>
                             </View>
                           )}
-
                           {selectedProcedure && (
                             <View style={styles.checkboxContainer}>
                               <CheckBox
                                 value={professionalismScores.respectsProcedures}
                                 disabled={!isEditable()}
-                                onValueChange={() => handleCheckboxChange("respectsProcedures")}
+                                onValueChange={() =>
+                                  handleCheckboxChange("respectsProcedures")
+                                }
                               />
-                              <Text style={styles.checkboxLabel}>Respect the Patient</Text>
+                              <Text style={styles.checkboxLabel}>
+                                Respect the Patient
+                              </Text>
                             </View>
                           )}
-
                           {selectedProcedure && (
                             <View style={styles.checkboxContainer}>
                               <CheckBox
                                 value={professionalismScores.goodListener}
                                 disabled={!isEditable()}
-                                onValueChange={() => handleCheckboxChange("goodListener")}
+                                onValueChange={() =>
+                                  handleCheckboxChange("goodListener")
+                                }
                               />
-                              <Text style={styles.checkboxLabel}>Good listener</Text>
+                              <Text style={styles.checkboxLabel}>
+                                Good listener
+                              </Text>
                             </View>
                           )}
-
                           {selectedProcedure && (
                             <View style={styles.checkboxContainer}>
                               <CheckBox
                                 value={professionalismScores.respectsColleagues}
                                 disabled={!isEditable()}
-                                onValueChange={() => handleCheckboxChange("respectsColleagues")}
+                                onValueChange={() =>
+                                  handleCheckboxChange("respectsColleagues")
+                                }
                               />
-                              <Text style={styles.checkboxLabel}>Respect colleagues</Text>
+                              <Text style={styles.checkboxLabel}>
+                                Respect colleagues
+                              </Text>
                             </View>
                           )}
-
                           {selectedProcedure && (
                             <View style={styles.checkboxContainer}>
                               <CheckBox
-                                value={professionalismScores.accurateRecordKeeping}
+                                value={
+                                  professionalismScores.accurateRecordKeeping
+                                }
                                 disabled={!isEditable()}
-                                onValueChange={() => handleCheckboxChange("accurateRecordKeeping")}
+                                onValueChange={() =>
+                                  handleCheckboxChange("accurateRecordKeeping")
+                                }
                               />
-                              <Text style={styles.checkboxLabel}>Accurately record Procedure information</Text>
+                              <Text style={styles.checkboxLabel}>
+                                Accurately record Procedure information
+                              </Text>
                             </View>
                           )}
-
                           <Text
                             style={{
                               fontSize: 24,
@@ -1356,12 +1446,15 @@ function ProcedureScreen({ navigation }) {
                             }}
                           >
                             Rating
-                          </Text>{" "}(เลือกได้เพียง 1 ตัวเลือก)
+                          </Text>{" "}
+                          (เลือกได้เพียง 1 ตัวเลือก)
                           <View style={styles.checkboxContainer}>
                             <CheckBox
                               value={rating === "Excellent"}
                               disabled={!isEditable()}
-                              onValueChange={() => handleRatingChange("Excellent")}
+                              onValueChange={() =>
+                                handleRatingChange("Excellent")
+                              }
                             />
                             <Text style={styles.checkboxLabel}>Excellent</Text>
                           </View>
@@ -1377,7 +1470,9 @@ function ProcedureScreen({ navigation }) {
                             <CheckBox
                               value={rating === "Acceptable"}
                               disabled={!isEditable()}
-                              onValueChange={() => handleRatingChange("Acceptable")}
+                              onValueChange={() =>
+                                handleRatingChange("Acceptable")
+                              }
                             />
                             <Text style={styles.checkboxLabel}>Acceptable</Text>
                           </View>
@@ -1385,11 +1480,14 @@ function ProcedureScreen({ navigation }) {
                             <CheckBox
                               value={rating === "Unsatisfied"}
                               disabled={!isEditable()}
-                              onValueChange={() => handleRatingChange("Unsatisfied")}
+                              onValueChange={() =>
+                                handleRatingChange("Unsatisfied")
+                              }
                             />
-                            <Text style={styles.checkboxLabel}>Unsatisfied</Text>
+                            <Text style={styles.checkboxLabel}>
+                              Unsatisfied
+                            </Text>
                           </View>
-
                           <Text
                             style={{
                               marginBottom: 10,
@@ -1403,7 +1501,7 @@ function ProcedureScreen({ navigation }) {
                             placeholder="Please enter a comment."
                             placeholderTextColor="grey"
                             value={comment}
-                            onChangeText={text => setComment(text)}
+                            onChangeText={(text) => setComment(text)}
                             multiline
                             numberOfLines={4}
                             editable={isEditable()}
@@ -1423,21 +1521,24 @@ function ProcedureScreen({ navigation }) {
                                 onPress={viewImages}
                                 style={[styles.button, styles.buttonViewImages]}
                               >
-                                <Text style={styles.textStyle}>View Picture</Text>
+                                <Text style={styles.textStyle}>
+                                  View Picture
+                                </Text>
                               </Pressable>
                             )}
                           <View style={styles.buttonContainer}>
-                          {(selectedProcedure.isEdited  || selectedStatus === 'pending') && (
-                            <Pressable
-                              style={[
-                                styles.recheckModalButton,
-                                styles.buttonApprove,
-                              ]}
-                              onPress={() => handleApprove()}
-                            >
-                              <Text style={styles.textStyle}>Approve</Text>
-                            </Pressable>
-                          )}
+                            {(selectedProcedure.isEdited ||
+                              selectedStatus === "pending") && (
+                              <Pressable
+                                style={[
+                                  styles.recheckModalButton,
+                                  styles.buttonApprove,
+                                ]}
+                                onPress={() => handleApprove()}
+                              >
+                                <Text style={styles.textStyle}>Approve</Text>
+                              </Pressable>
+                            )}
                             {!selectedProcedure.isReApproved && (
                               <Pressable
                                 style={[
@@ -1449,46 +1550,53 @@ function ProcedureScreen({ navigation }) {
                                 <Text style={styles.textStyle}>Re-approve</Text>
                               </Pressable>
                             )}
-                            {(selectedProcedure.isEdited || selectedStatus === 'pending') && (
-                            <Pressable
-                              style={[
-                                styles.recheckModalButton,
-                                styles.buttonCancel,
-                              ]}
-                              onPress={() => handleReject()}
-                            >
-                              <Text style={styles.textStyle}>Reject</Text>
-                            </Pressable>
-                          )}
+                            {(selectedProcedure.isEdited ||
+                              selectedStatus === "pending") && (
+                              <Pressable
+                                style={[
+                                  styles.recheckModalButton,
+                                  styles.buttonCancel,
+                                ]}
+                                onPress={() => handleReject()}
+                              >
+                                <Text style={styles.textStyle}>Reject</Text>
+                              </Pressable>
+                            )}
                           </View>
                           <Pressable
-                        style={[styles.button, styles.buttonClose2]}
-                        onPress={() => setModalVisible(false)}
-                      >
-                        <Text style={styles.textStyle}>Close</Text>
-                      </Pressable>
+                            style={[styles.button, styles.buttonClose2]}
+                            onPress={() => setModalVisible(false)}
+                          >
+                            <Text style={styles.textStyle}>Close</Text>
+                          </Pressable>
                         </View>
                       )}
 
-                      {(role !== "teacher" || (role === "teacher" && (selectedStatus === "approved" || selectedStatus === "rejected"))) && selectedProcedure.images &&
-                        selectedProcedure.images.length > 0 && (
+                    {(role !== "teacher" ||
+                      (role === "teacher" &&
+                        (selectedStatus === "approved" ||
+                          selectedStatus === "rejected"))) &&
+                      selectedProcedure.images &&
+                      selectedProcedure.images.length > 0 && (
                         <Pressable
-                            onPress={viewImages}
-                            style={[styles.button, styles.buttonViewImages]}
-                          >
-                            <Text style={styles.textStyle}>View Picture</Text>
-                          </Pressable>
-                      )}
-
-                      {(role !== "teacher" || (role === "teacher" && (selectedStatus === "approved" || selectedStatus === "rejected"))) && (
-                        <Pressable
-                          style={[styles.button, styles.buttonClose]}
-                          onPress={() => setModalVisible(!modalVisible)}
+                          onPress={viewImages}
+                          style={[styles.button, styles.buttonViewImages]}
                         >
-                          <Text style={styles.textStyle}>Close</Text>
+                          <Text style={styles.textStyle}>View Picture</Text>
                         </Pressable>
                       )}
 
+                    {(role !== "teacher" ||
+                      (role === "teacher" &&
+                        (selectedStatus === "approved" ||
+                          selectedStatus === "rejected"))) && (
+                      <Pressable
+                        style={[styles.button, styles.buttonClose]}
+                        onPress={() => setModalVisible(!modalVisible)}
+                      >
+                        <Text style={styles.textStyle}>Close</Text>
+                      </Pressable>
+                    )}
                   </View>
 
                   {/* Modal สำหรับเปิดดูรูปภาพ */}
@@ -1580,9 +1688,10 @@ function ProcedureScreen({ navigation }) {
                     visible={
                       professionalismScoresModalVisible &&
                       (selectedProcedure.status === "approved" ||
-                      selectedProcedure.status === "rejected" ||
-                      (selectedProcedure.status === "reApproved" && role === "student"))
-                  }
+                        selectedProcedure.status === "rejected" ||
+                        (selectedProcedure.status === "reApproved" &&
+                          role === "student"))
+                    }
                     onRequestClose={() => {
                       setProfessionalismScoresModalVisible(
                         !professionalismScoresModalVisible

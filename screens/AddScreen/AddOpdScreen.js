@@ -22,7 +22,7 @@ import {
   where,
   Timestamp,
   doc,
-  getDoc
+  getDoc,
 } from "firebase/firestore";
 import { useDropzone } from "react-dropzone";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -191,18 +191,22 @@ function AddOpdScreen({ navigation }) {
 
   const fetchMainDiagnoses = async () => {
     try {
-      const mainDiagnosisDocRef = doc(db, "mainDiagnosis", "LcvLDMSEraOH9zH4fbmS");
+      const mainDiagnosisDocRef = doc(
+        db,
+        "mainDiagnosis",
+        "LcvLDMSEraOH9zH4fbmS"
+      );
       const docSnap = await getDoc(mainDiagnosisDocRef);
-  
+
       if (docSnap.exists()) {
         const data = docSnap.data();
         const diagnoses = data.diseases.map((disease, index) => ({
-          key: `${(index + 1).toString().padStart(3, '0')} | ${disease}`, // ปรับแก้ที่นี่เพื่อให้ key เป็นชื่อโรคด้วย
-          value: `${(index + 1).toString().padStart(3, '0')} | ${disease}`
+          key: `${(index + 1).toString().padStart(3, "0")} | ${disease}`, // ปรับแก้ที่นี่เพื่อให้ key เป็นชื่อโรคด้วย
+          value: `${(index + 1).toString().padStart(3, "0")} | ${disease}`,
         }));
-  
+
         diagnoses.sort((a, b) => a.value.localeCompare(b.value));
-  
+
         setMainDiagnoses(diagnoses);
       } else {
         console.log("No such document!");
@@ -210,8 +214,8 @@ function AddOpdScreen({ navigation }) {
     } catch (error) {
       console.error("Error fetching main diagnoses:", error);
     }
-  }
-  
+  };
+
   useEffect(() => {
     fetchMainDiagnoses();
   }, []);
@@ -271,8 +275,8 @@ function AddOpdScreen({ navigation }) {
       const uploadedPdfUrl = await uploadPdfToStorage();
 
       // ปรับปรุง HN และปีพ.ศ. เพื่อให้ครบ 6 หลักและ 2 หลักตามที่ต้องการ
-      const formattedHN = hn.padStart(6, '0');
-      const formattedHNYear = hnYear.padStart(2, '0');
+      const formattedHN = hn.padStart(6, "0");
+      const formattedHNYear = hnYear.padStart(2, "0");
 
       // รวม HN และปีพ.ศ. เข้าด้วยกัน
       const fullHN = formattedHNYear + formattedHN;
@@ -298,7 +302,7 @@ function AddOpdScreen({ navigation }) {
           minutes: selectedMinute,
           subject,
           lastHN: formattedHN,
-          hnYear
+          hnYear,
           // Add more fields as needed
         });
 
@@ -432,45 +436,47 @@ function AddOpdScreen({ navigation }) {
             >
               HN
             </Text>
-            <View style={{
-              flexDirection: 'row',
-              borderColor: '#FEF0E6',
-              borderWidth: 1,
-              borderRadius: 10,
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}>
-            <TextInput
-              placeholder="6-digit HN"
-              placeholderTextColor="grey"
-              value={hn}
-              onChangeText={setHN}
-              keyboardType="numeric"
-              maxLength={6}
+            <View
               style={{
-                flex: 1,
-                textAlign: 'center',
-                fontSize: 20,
-                backgroundColor: '#FEF0E6'
+                flexDirection: "row",
+                borderColor: "#FEF0E6",
+                borderWidth: 1,
+                borderRadius: 10,
+                alignItems: "center",
+                justifyContent: "space-between",
               }}
-            />
-            <Text style={{ marginHorizontal: 5 }}>/</Text>
-            <TextInput
-              placeholder="YY"
-              placeholderTextColor="grey"
-              value={hnYear}
-              onChangeText={setHNYear}
-              keyboardType="numeric"
-              maxLength={2}
-              style={{
-                width: 60,
-                textAlign: 'center',
-                fontSize: 20,
-                backgroundColor: '#FEF0E6'
-              }}
-            />
+            >
+              <TextInput
+                placeholder="6-digit HN"
+                placeholderTextColor="grey"
+                value={hn}
+                onChangeText={setHN}
+                keyboardType="numeric"
+                maxLength={6}
+                style={{
+                  flex: 1,
+                  textAlign: "center",
+                  fontSize: 20,
+                  backgroundColor: "#FEF0E6",
+                }}
+              />
+              <Text style={{ marginHorizontal: 5 }}>/</Text>
+              <TextInput
+                placeholder="YY"
+                placeholderTextColor="grey"
+                value={hnYear}
+                onChangeText={setHNYear}
+                keyboardType="numeric"
+                maxLength={2}
+                style={{
+                  width: 60,
+                  textAlign: "center",
+                  fontSize: 20,
+                  backgroundColor: "#FEF0E6",
+                }}
+              />
+            </View>
           </View>
-        </View>
           <View style={{ width: dimensions.width < 768 ? "100%" : "45%" }}>
             <Text
               style={{

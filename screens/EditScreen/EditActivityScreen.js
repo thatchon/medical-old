@@ -1,16 +1,38 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Button, StyleSheet, TouchableOpacity, TextInput, Platform, ScrollView, Dimensions } from "react-native";
+import {
+  View,
+  Text,
+  Button,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  Platform,
+  ScrollView,
+  Dimensions,
+} from "react-native";
 import { SelectList } from "react-native-dropdown-select-list";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { db, auth, storage } from '../../data/firebaseDB'
-import { getDocs, addDoc, collection, query, where, Timestamp, updateDoc, doc, getDoc } from "firebase/firestore";
+import { db, auth, storage } from "../../data/firebaseDB";
+import {
+  getDocs,
+  addDoc,
+  collection,
+  query,
+  where,
+  Timestamp,
+  updateDoc,
+  doc,
+  getDoc,
+} from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
-import SubHeader from '../../component/SubHeader';  
+import SubHeader from "../../component/SubHeader";
 
 function EditActivityScreen({ route, navigation }) {
   const { activityData } = route.params;
 
-  const [selectedDate, setSelectedDate] = useState(activityData.admissionDate.toDate());
+  const [selectedDate, setSelectedDate] = useState(
+    activityData.admissionDate.toDate()
+  );
 
   const [mainDiagnosis, setMainDiagnosis] = useState(""); // ใช้ TextInput สำหรับ Main Diagnosis
   const [selectedDiagnosis, setSelectedDiagnosis] = useState([{}]); // เก็บโรคที่เลือกทั้งหมด
@@ -19,11 +41,15 @@ function EditActivityScreen({ route, navigation }) {
   const [isOtherSelected, setIsOtherSelected] = useState(false); // ตัวแปรสำหรับตรวจสอบว่าเลือก Other หรือไม่
 
   const [professorId, setProfessorId] = useState(activityData.professorId);
-  const [professorName, setProfessorName] = useState(activityData.professorName); // สถานะสำหรับเก็บชื่ออาจารย์ที่ถูกเลือก
+  const [professorName, setProfessorName] = useState(
+    activityData.professorName
+  ); // สถานะสำหรับเก็บชื่ออาจารย์ที่ถูกเลือก
   const [teachers, setTeachers] = useState([]);
 
   const [activityType, setActivityType] = useState([]);
-  const [selectedActivityType, setSelectedActivityType] = useState(activityData.activityType);
+  const [selectedActivityType, setSelectedActivityType] = useState(
+    activityData.activityType
+  );
 
   const [note, setNote] = useState(activityData.note); // Note
   const status = "pending"; // Status
@@ -31,23 +57,33 @@ function EditActivityScreen({ route, navigation }) {
   const [show, setShow] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
 
-  const [selectedHour, setSelectedHour] = useState(activityData.hours.toString());
-  const [selectedMinute, setSelectedMinute] = useState(activityData.minutes.toString());
+  const [selectedHour, setSelectedHour] = useState(
+    activityData.hours.toString()
+  );
+  const [selectedMinute, setSelectedMinute] = useState(
+    activityData.minutes.toString()
+  );
 
   const [uploadedImages, setUploadedImages] = useState([]);
 
-  const [dimensions, setDimensions] = useState(Dimensions.get('window'));
+  const [dimensions, setDimensions] = useState(Dimensions.get("window"));
 
-  const hours = Array.from({ length: 24 }, (_, i) => ({ key: i.toString(), value: i.toString() }));
-  const minutes = Array.from({ length: 60 }, (_, i) => ({ key: i.toString(), value: i.toString() }));
+  const hours = Array.from({ length: 24 }, (_, i) => ({
+    key: i.toString(),
+    value: i.toString(),
+  }));
+  const minutes = Array.from({ length: 60 }, (_, i) => ({
+    key: i.toString(),
+    value: i.toString(),
+  }));
 
   useEffect(() => {
     const updateLayout = () => {
-      setDimensions(Dimensions.get('window'));
+      setDimensions(Dimensions.get("window"));
     };
 
-    Dimensions.addEventListener('change', updateLayout);
-    return () => Dimensions.removeEventListener('change', updateLayout);
+    Dimensions.addEventListener("change", updateLayout);
+    return () => Dimensions.removeEventListener("change", updateLayout);
   }, []);
 
   const styles = StyleSheet.create({
@@ -63,49 +99,49 @@ function EditActivityScreen({ route, navigation }) {
     },
     uploadTitle: {
       fontSize: 20,
-      fontWeight: '400',
+      fontWeight: "400",
       marginVertical: 8,
-      textAlign: 'left'
+      textAlign: "left",
     },
     dropzone: {
       height: 50,
-      borderColor: 'gray',
+      borderColor: "gray",
       borderWidth: 1,
       borderRadius: 8,
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexDirection: 'row'
+      alignItems: "center",
+      justifyContent: "center",
+      flexDirection: "row",
     },
     uploadedFileName: {
       marginLeft: 10,
     },
     modalContainer: {
       flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
     },
     modalImage: {
-      width: '90%',
-      height: 'auto',
+      width: "90%",
+      height: "auto",
       marginVertical: 10,
       borderRadius: 10,
     },
     imageText: {
       fontSize: 18,
       marginTop: 10,
-      textAlign: 'center',
-      color: 'blue'
+      textAlign: "center",
+      color: "blue",
     },
   });
 
   const selectImages = (event) => {
     const files = event.target.files;
     if (files) {
-        const imagesArray = Array.from(files);
-        setUploadedImages(imagesArray);
+      const imagesArray = Array.from(files);
+      setUploadedImages(imagesArray);
     }
-  }
+  };
 
   const uploadImages = async (uploadedImages, docId) => {
     const storageURLs = [];
@@ -115,7 +151,7 @@ function EditActivityScreen({ route, navigation }) {
       const downloadURL = await getDownloadURL(imageRef);
       storageURLs.push(downloadURL);
     });
-  
+
     await Promise.all(uploadPromises);
     return storageURLs;
   };
@@ -140,8 +176,8 @@ function EditActivityScreen({ route, navigation }) {
             padding: 10,
             fontSize: 16,
             width: "95%",
-            backgroundColor: '#FEF0E6',
-            borderColor: '#FEF0E6',
+            backgroundColor: "#FEF0E6",
+            borderColor: "#FEF0E6",
             borderWidth: 1,
             borderRadius: 10,
           }}
@@ -168,32 +204,37 @@ function EditActivityScreen({ route, navigation }) {
     }
   };
 
-
   const onSelectTeacher = (selectedTeacherId) => {
-    const selectedTeacher = teachers.find(teacher => teacher.key === selectedTeacherId);
+    const selectedTeacher = teachers.find(
+      (teacher) => teacher.key === selectedTeacherId
+    );
     // console.log(selectedTeacher)
     if (selectedTeacher) {
       setProfessorName(selectedTeacher.value);
       setProfessorId(selectedTeacher.key);
     } else {
-      console.error('Teacher not found:', selectedTeacherId);
+      console.error("Teacher not found:", selectedTeacherId);
     }
-  }
+  };
 
   const fetchMainDiagnoses = async () => {
     try {
-      const mainDiagnosisDocRef = doc(db, "mainDiagnosis", "LcvLDMSEraOH9zH4fbmS");
+      const mainDiagnosisDocRef = doc(
+        db,
+        "mainDiagnosis",
+        "LcvLDMSEraOH9zH4fbmS"
+      );
       const docSnap = await getDoc(mainDiagnosisDocRef);
-  
+
       if (docSnap.exists()) {
         const data = docSnap.data();
         const diagnoses = data.diseases.map((disease, index) => ({
-          key: `${(index + 1).toString().padStart(3, '0')} | ${disease}`, // ปรับแก้ที่นี่เพื่อให้ key เป็นชื่อโรคด้วย
-          value: `${(index + 1).toString().padStart(3, '0')} | ${disease}`
+          key: `${(index + 1).toString().padStart(3, "0")} | ${disease}`, // ปรับแก้ที่นี่เพื่อให้ key เป็นชื่อโรคด้วย
+          value: `${(index + 1).toString().padStart(3, "0")} | ${disease}`,
         }));
-  
+
         diagnoses.sort((a, b) => a.value.localeCompare(b.value));
-  
+
         setMainDiagnoses(diagnoses);
       } else {
         console.log("No such document!");
@@ -201,8 +242,8 @@ function EditActivityScreen({ route, navigation }) {
     } catch (error) {
       console.error("Error fetching main diagnoses:", error);
     }
-  }
-  
+  };
+
   useEffect(() => {
     fetchMainDiagnoses();
   }, []);
@@ -235,7 +276,7 @@ function EditActivityScreen({ route, navigation }) {
       try {
         const activityTypeRef = collection(db, "activity_type");
         const querySnapshot = await getDocs(activityTypeRef);
-  
+
         const activityArray = [];
         querySnapshot.forEach((doc) => {
           const data = doc.data();
@@ -243,29 +284,28 @@ function EditActivityScreen({ route, navigation }) {
             activityArray.push({ key: activity, value: activity });
           });
         });
-  
+
         setActivityType(activityArray);
       } catch (error) {
         console.error("Error fetching activity:", error);
       }
     }
-  
+
     fetchActivityType();
   }, []);
 
   const saveDataToFirestore = async () => {
     try {
-
       if (!mainDiagnosis && !otherDiagnosis) {
         alert("โปรดกรอก Main Diagnosis หรือใส่โรคอื่นๆ");
         return;
       }
-      
+
       if (!selectedActivityType) {
         alert("โปรดเลือกประเภท");
         return;
       }
-  
+
       if (!selectedDate) {
         alert("โปรดเลือกวันที่รับผู้ป่วย");
         return;
@@ -286,7 +326,7 @@ function EditActivityScreen({ route, navigation }) {
         alert("ไม่พบข้อมูลผู้ใช้");
         return;
       }
-  
+
       // Step 1: Save patient data (excluding images) and retrieve the Document ID
       const activityDocRef = doc(db, "activity", activityData.id);
       const activityDocSnapshot = await getDoc(activityDocRef);
@@ -294,37 +334,46 @@ function EditActivityScreen({ route, navigation }) {
       if (activityDocSnapshot.exists()) {
         const activityData = activityDocSnapshot.data();
 
-      if (activityData.status === "reApproved") {
-      await updateDoc(activityDocRef, {
-        admissionDate: Timestamp.fromDate(new Date(selectedDate)),
-        activityType: selectedActivityType, // Activity
-        createBy_id: user.uid, // User ID
-        mainDiagnosis: isOtherSelected ? otherDiagnosis : mainDiagnosis,
-        note: note, // Note
-        professorName: teachers.find(t => t.key === professorId)?.value,
-        professorId: professorId,
-        images: uploadedImages.length > 0 ? await uploadImages(uploadedImages, activityData.id) : activityData.images, // We'll store the image URLs in the next step
-        hours: parseInt(selectedHour),
-        minutes: parseInt(selectedMinute),
-        isEdited: true
-      });
+        if (activityData.status === "reApproved") {
+          await updateDoc(activityDocRef, {
+            admissionDate: Timestamp.fromDate(new Date(selectedDate)),
+            activityType: selectedActivityType, // Activity
+            createBy_id: user.uid, // User ID
+            mainDiagnosis: isOtherSelected ? otherDiagnosis : mainDiagnosis,
+            note: note, // Note
+            professorName: teachers.find((t) => t.key === professorId)?.value,
+            professorId: professorId,
+            images:
+              uploadedImages.length > 0
+                ? await uploadImages(uploadedImages, activityData.id)
+                : activityData.images, // We'll store the image URLs in the next step
+            hours: parseInt(selectedHour),
+            minutes: parseInt(selectedMinute),
+            isEdited: true,
+          });
 
-      alert("อัปเดตข้อมูลสำเร็จ");
-    } else if (activityData.status === "pending" || activityData.status === "rejected") {
-        await updateDoc(activityDocRef, {
-          admissionDate: Timestamp.fromDate(new Date(selectedDate)),
-          activityType: selectedActivityType, // Activity
-          createBy_id: user.uid, // User ID
-          mainDiagnosis: isOtherSelected ? otherDiagnosis : mainDiagnosis,
-          note: note, // Note
-          professorName: teachers.find(t => t.key === professorId)?.value,
-          professorId: professorId,
-          images: uploadedImages.length > 0 ? await uploadImages(uploadedImages, activityData.id) : activityData.images, // We'll store the image URLs in the next step
-          hours: parseInt(selectedHour),
-          minutes: parseInt(selectedMinute),
-        });
+          alert("อัปเดตข้อมูลสำเร็จ");
+        } else if (
+          activityData.status === "pending" ||
+          activityData.status === "rejected"
+        ) {
+          await updateDoc(activityDocRef, {
+            admissionDate: Timestamp.fromDate(new Date(selectedDate)),
+            activityType: selectedActivityType, // Activity
+            createBy_id: user.uid, // User ID
+            mainDiagnosis: isOtherSelected ? otherDiagnosis : mainDiagnosis,
+            note: note, // Note
+            professorName: teachers.find((t) => t.key === professorId)?.value,
+            professorId: professorId,
+            images:
+              uploadedImages.length > 0
+                ? await uploadImages(uploadedImages, activityData.id)
+                : activityData.images, // We'll store the image URLs in the next step
+            hours: parseInt(selectedHour),
+            minutes: parseInt(selectedMinute),
+          });
 
-        alert("อัปเดตข้อมูลสำเร็จ");
+          alert("อัปเดตข้อมูลสำเร็จ");
         } else {
           alert("ไม่สามารถอัปเดตข้อมูลได้");
         }
@@ -335,97 +384,172 @@ function EditActivityScreen({ route, navigation }) {
       console.error("Error updating document: ", error);
       alert("เกิดข้อผิดพลาดในการอัปเดตข้อมูล");
     }
-  };  
+  };
 
   return (
     <ScrollView>
       <View style={styles.container}>
-
-        <View style={{marginVertical: dimensions.width < 768 ? 40 : 60,}}>
+        <View style={{ marginVertical: dimensions.width < 768 ? 40 : 60 }}>
           <SubHeader text="EDIT ACTIVITY" />
         </View>
 
-        <View style={{ flexDirection: dimensions.width < 768 ? 'column' : 'row', alignItems: 'left', marginBottom: 16, justifyContent: 'space-between' }}>
-          <View style={{ width: dimensions.width < 768 ? '100%' : '45%' }}>
-            <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left' }}>Activity Date</Text>
+        <View
+          style={{
+            flexDirection: dimensions.width < 768 ? "column" : "row",
+            alignItems: "left",
+            marginBottom: 16,
+            justifyContent: "space-between",
+          }}
+        >
+          <View style={{ width: dimensions.width < 768 ? "100%" : "45%" }}>
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: 400,
+                marginVertical: 8,
+                textAlign: "left",
+              }}
+            >
+              Activity Date
+            </Text>
             <DateInput />
           </View>
-          <View style={{ width: dimensions.width < 768 ? '100%' : '45%', flexDirection: 'row', justifyContent: 'left', alignItems: 'left' }}>
+          <View
+            style={{
+              width: dimensions.width < 768 ? "100%" : "45%",
+              flexDirection: "row",
+              justifyContent: "left",
+              alignItems: "left",
+            }}
+          >
             <View>
-              <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left' }}>Activity Time</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'left' }}>
+              <Text
+                style={{
+                  fontSize: 20,
+                  fontWeight: 400,
+                  marginVertical: 8,
+                  textAlign: "left",
+                }}
+              >
+                Activity Time
+              </Text>
+              <View style={{ flexDirection: "row", alignItems: "left" }}>
                 <SelectList
                   setSelected={setSelectedHour}
                   defaultOption={{ key: selectedHour, value: selectedHour }}
                   data={hours}
                   placeholder="Hours"
                   search={false}
-                  boxStyles={{ width: 'auto', backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10 }}
-                  dropdownStyles={{ backgroundColor: '#FEF0E6' }}
+                  boxStyles={{
+                    width: "auto",
+                    backgroundColor: "#FEF0E6",
+                    borderColor: "#FEF0E6",
+                    borderWidth: 1,
+                    borderRadius: 10,
+                  }}
+                  dropdownStyles={{ backgroundColor: "#FEF0E6" }}
                 />
-                <Text style={{ marginHorizontal: 5, alignSelf: 'center' }}>:</Text>
+                <Text style={{ marginHorizontal: 5, alignSelf: "center" }}>
+                  :
+                </Text>
                 <SelectList
                   setSelected={setSelectedMinute}
                   defaultOption={{ key: selectedMinute, value: selectedMinute }}
                   data={minutes}
                   placeholder="Minutes"
                   search={false}
-                  boxStyles={{ width: 'auto', backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10  }}
-                  dropdownStyles={{ backgroundColor: '#FEF0E6' }}
+                  boxStyles={{
+                    width: "auto",
+                    backgroundColor: "#FEF0E6",
+                    borderColor: "#FEF0E6",
+                    borderWidth: 1,
+                    borderRadius: 10,
+                  }}
+                  dropdownStyles={{ backgroundColor: "#FEF0E6" }}
                 />
               </View>
             </View>
-        </View>
-      </View>
-
-      <View style={{ flexDirection: dimensions.width < 768 ? 'column' : 'row', justifyContent: 'space-between', marginBottom: 16 }}>
-        <View style={{ width: dimensions.width < 768 ? '100%' : '45%' }}>
-          <Text style={{
-            fontSize: 20,
-            fontWeight: 400,
-            marginVertical: 8,
-            textAlign: 'left'
-
-          }}>Activity Type</Text>
-          <SelectList
-            setSelected={setSelectedActivityType}
-            defaultOption={{ key: selectedActivityType, value: selectedActivityType }}
-            data={activityType}
-            placeholder={"Select activity type"}
-            boxStyles={{ width: 'auto', backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10  }}
-            dropdownStyles={{ backgroundColor: '#FEF0E6' }}
-          />
+          </View>
         </View>
 
-        <View style={{ width: dimensions.width < 768 ? '100%' : '45%' }}>
-          <Text style={{
-            fontSize: 20, 
-            fontWeight: 400,
-            marginVertical: 8, 
-            textAlign: 'left', 
-            alignItems: 'flex-start' 
-            
-            }}>Professor</Text>
+        <View
+          style={{
+            flexDirection: dimensions.width < 768 ? "column" : "row",
+            justifyContent: "space-between",
+            marginBottom: 16,
+          }}
+        >
+          <View style={{ width: dimensions.width < 768 ? "100%" : "45%" }}>
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: 400,
+                marginVertical: 8,
+                textAlign: "left",
+              }}
+            >
+              Activity Type
+            </Text>
+            <SelectList
+              setSelected={setSelectedActivityType}
+              defaultOption={{
+                key: selectedActivityType,
+                value: selectedActivityType,
+              }}
+              data={activityType}
+              placeholder={"Select activity type"}
+              boxStyles={{
+                width: "auto",
+                backgroundColor: "#FEF0E6",
+                borderColor: "#FEF0E6",
+                borderWidth: 1,
+                borderRadius: 10,
+              }}
+              dropdownStyles={{ backgroundColor: "#FEF0E6" }}
+            />
+          </View>
+
+          <View style={{ width: dimensions.width < 768 ? "100%" : "45%" }}>
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: 400,
+                marginVertical: 8,
+                textAlign: "left",
+                alignItems: "flex-start",
+              }}
+            >
+              Professor
+            </Text>
             <SelectList
               setSelected={onSelectTeacher}
-              defaultOption={{  key: professorId, value: professorName }}
+              defaultOption={{ key: professorId, value: professorName }}
               data={teachers}
               placeholder={"Select the professor name"}
               placeholderTextColor="grey"
-              boxStyles={{ width: 'auto', backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10  }}
-              dropdownStyles={{ backgroundColor: '#FEF0E6' }}
+              boxStyles={{
+                width: "auto",
+                backgroundColor: "#FEF0E6",
+                borderColor: "#FEF0E6",
+                borderWidth: 1,
+                borderRadius: 10,
+              }}
+              dropdownStyles={{ backgroundColor: "#FEF0E6" }}
             />
+          </View>
         </View>
-      </View>
 
-        <View style={{ marginBottom: 16, width: '70%' }}>
-          <Text style={{
-            fontSize: 20,
-            fontWeight: 400,
-            marginVertical: 8,
-            textAlign: 'left'
-
-          }}>Topic (ถ้าไม่มีตัวเลือก ให้เลือก Other)</Text>
+        <View style={{ marginBottom: 16, width: "70%" }}>
+          <Text
+            style={{
+              fontSize: 20,
+              fontWeight: 400,
+              marginVertical: 8,
+              textAlign: "left",
+            }}
+          >
+            Topic (ถ้าไม่มีตัวเลือก ให้เลือก Other)
+          </Text>
           {isOtherSelected ? (
             <View
               style={{
@@ -478,63 +602,80 @@ function EditActivityScreen({ route, navigation }) {
           )}
         </View>
 
-        <View style={{ marginBottom: 16, width: '70%', }}>
-          <Text style={{
-            fontSize: 20,
-            fontWeight: 400,
-            marginVertical: 8,
-            textAlign: 'left'
-
-          }}>Note / Reflection (optional)</Text>
-        <View style={{
-          height: 260,
-          borderColor: '#FEF0E6',
-          borderWidth: 1,
-          borderRadius: 10,
-          backgroundColor: '#FEF0E6'
-        }}>
-          <TextInput
-                placeholder={isFocused ? '' : "Fill a note/reflection"}
-                placeholderTextColor="grey"
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(note.length > 0)}
-                value={note}
-                onChangeText={setNote}
-                multiline
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  textAlign: 'left', // ตั้งค่าให้ข้อความจัดชิดซ้าย
-                  textAlignVertical: 'top', // ตั้งค่าให้ข้อความเริ่มที่บน
-                  paddingTop: 8, // พิจารณาเพิ่ม padding ด้านบน
-                  paddingLeft: 8, // พิจารณาเพิ่ม padding ด้านซ้าย
-                  fontSize: 20
-                }}
-          ></TextInput>
+        <View style={{ marginBottom: 16, width: "70%" }}>
+          <Text
+            style={{
+              fontSize: 20,
+              fontWeight: 400,
+              marginVertical: 8,
+              textAlign: "left",
+            }}
+          >
+            Note / Reflection (optional)
+          </Text>
+          <View
+            style={{
+              height: 260,
+              borderColor: "#FEF0E6",
+              borderWidth: 1,
+              borderRadius: 10,
+              backgroundColor: "#FEF0E6",
+            }}
+          >
+            <TextInput
+              placeholder={isFocused ? "" : "Fill a note/reflection"}
+              placeholderTextColor="grey"
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(note.length > 0)}
+              value={note}
+              onChangeText={setNote}
+              multiline
+              style={{
+                width: "100%",
+                height: "100%",
+                textAlign: "left", // ตั้งค่าให้ข้อความจัดชิดซ้าย
+                textAlignVertical: "top", // ตั้งค่าให้ข้อความเริ่มที่บน
+                paddingTop: 8, // พิจารณาเพิ่ม padding ด้านบน
+                paddingLeft: 8, // พิจารณาเพิ่ม padding ด้านซ้าย
+                fontSize: 20,
+              }}
+            ></TextInput>
           </View>
         </View>
 
-    {/* UI for image upload */}
-    <View style={styles.uploadContainer}>
-        <Text style={styles.uploadTitle}>
-          Upload Image ( Unable to support files larger than 5 MB.)
-(Optional)</Text>
-        <View style={styles.dropzone}>
-          <input type="file" accept="image/*" multiple onChange={selectImages} />
+        {/* UI for image upload */}
+        <View style={styles.uploadContainer}>
+          <Text style={styles.uploadTitle}>
+            Upload Image ( Unable to support files larger than 5 MB.) (Optional)
+          </Text>
+          <View style={styles.dropzone}>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={selectImages}
+            />
+          </View>
         </View>
-      </View>
 
-      <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: '20%' }}>
-        <TouchableOpacity
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "center",
+            alignItems: "center",
+            marginBottom: "20%",
+          }}
+        >
+          <TouchableOpacity
             onPress={saveDataToFirestore}
             style={{
               height: 48,
               width: 120,
-              justifyContent: 'center',
-              alignItems: 'center',
-              backgroundColor: '#008000',
+              justifyContent: "center",
+              alignItems: "center",
+              backgroundColor: "#008000",
               borderRadius: 30,
-              shadowColor: '#000',
+              shadowColor: "#000",
               shadowOffset: {
                 width: 0,
                 height: 2,
@@ -542,10 +683,10 @@ function EditActivityScreen({ route, navigation }) {
               shadowOpacity: 0.25,
               shadowRadius: 4,
               elevation: 5,
-              marginRight: 20
+              marginRight: 20,
             }}
           >
-            <Text style={{ fontSize: 20, color: 'white' }}>Save</Text>
+            <Text style={{ fontSize: 20, color: "white" }}>Save</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
@@ -553,11 +694,11 @@ function EditActivityScreen({ route, navigation }) {
               height: 48,
               width: 120,
               marginRight: 10,
-              justifyContent: 'center',
-              alignItems: 'center',
-              backgroundColor: 'grey',
+              justifyContent: "center",
+              alignItems: "center",
+              backgroundColor: "grey",
               borderRadius: 30,
-              shadowColor: '#000',
+              shadowColor: "#000",
               shadowOffset: {
                 width: 0,
                 height: 2,
@@ -567,12 +708,12 @@ function EditActivityScreen({ route, navigation }) {
               elevation: 5,
             }}
           >
-            <Text style={{ fontSize: 20, color: 'white' }}>Back</Text>
+            <Text style={{ fontSize: 20, color: "white" }}>Back</Text>
           </TouchableOpacity>
         </View>
       </View>
     </ScrollView>
-    );
-  }
+  );
+}
 
 export default EditActivityScreen;

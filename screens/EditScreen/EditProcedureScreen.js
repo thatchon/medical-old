@@ -1,18 +1,43 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Button, StyleSheet, TouchableOpacity, TextInput, CheckBox, Platform, ScrollView, Dimensions} from "react-native";
+import {
+  View,
+  Text,
+  Button,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  CheckBox,
+  Platform,
+  ScrollView,
+  Dimensions,
+} from "react-native";
 import { SelectList } from "react-native-dropdown-select-list";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { db, auth, storage } from '../../data/firebaseDB'
-import { getDocs, addDoc, collection, query, where, Timestamp, updateDoc, doc, getDoc } from "firebase/firestore";
+import { db, auth, storage } from "../../data/firebaseDB";
+import {
+  getDocs,
+  addDoc,
+  collection,
+  query,
+  where,
+  Timestamp,
+  updateDoc,
+  doc,
+  getDoc,
+} from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
-import SubHeader from '../../component/SubHeader'; 
+import SubHeader from "../../component/SubHeader";
 
 function EditProcedureScreen({ route, navigation }) {
   const { procedureData } = route.params;
 
-  const [selectedDate, setSelectedDate] = useState(procedureData.admissionDate.toDate());
+  const [selectedDate, setSelectedDate] = useState(
+    procedureData.admissionDate.toDate()
+  );
 
-  const [selectedProcedures, setSelectedProcedures] = useState(procedureData.procedureType); // State for selected Procedures
+  const [selectedProcedures, setSelectedProcedures] = useState(
+    procedureData.procedureType
+  ); // State for selected Procedures
   const [mainProcedure, setMainProcedure] = useState([]); // State to store main Procedure
 
   const [hn, setHN] = useState(procedureData.hn); // HN
@@ -20,30 +45,44 @@ function EditProcedureScreen({ route, navigation }) {
   const [lastHN, setLastHN] = useState(procedureData.lastHN);
   const [remarks, setRemarks] = useState(procedureData.remarks); // remarks
   const [approvedById, setApprovedById] = useState(procedureData.approvedById); // สถานะสำหรับเก็บ id ของอาจารย์ที่ถูกเลือก
-  const [approvedByName, setApprovedByName] = useState(procedureData.approvedByName); // สถานะสำหรับเก็บชื่ออาจารย์ที่ถูกเลือก
+  const [approvedByName, setApprovedByName] = useState(
+    procedureData.approvedByName
+  ); // สถานะสำหรับเก็บชื่ออาจารย์ที่ถูกเลือก
   const [teachers, setTeachers] = useState([]); // สถานะสำหรับเก็บรายการอาจารย์ทั้งหมด
-  const [procedureLevel, setProcedureLevel] = useState(procedureData.procedureLevel);
+  const [procedureLevel, setProcedureLevel] = useState(
+    procedureData.procedureLevel
+  );
   const [date, setDate] = useState(new Date());
   const [show, setShow] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
 
-  const [selectedHour, setSelectedHour] = useState(procedureData.hours.toString());
-  const [selectedMinute, setSelectedMinute] = useState(procedureData.minutes.toString());
+  const [selectedHour, setSelectedHour] = useState(
+    procedureData.hours.toString()
+  );
+  const [selectedMinute, setSelectedMinute] = useState(
+    procedureData.minutes.toString()
+  );
 
   const [uploadedImages, setUploadedImages] = useState([]);
 
-  const [dimensions, setDimensions] = useState(Dimensions.get('window'));
+  const [dimensions, setDimensions] = useState(Dimensions.get("window"));
 
-  const hours = Array.from({ length: 24 }, (_, i) => ({ key: i.toString(), value: i.toString() }));
-  const minutes = Array.from({ length: 60 }, (_, i) => ({ key: i.toString(), value: i.toString() }));
+  const hours = Array.from({ length: 24 }, (_, i) => ({
+    key: i.toString(),
+    value: i.toString(),
+  }));
+  const minutes = Array.from({ length: 60 }, (_, i) => ({
+    key: i.toString(),
+    value: i.toString(),
+  }));
 
   useEffect(() => {
     const updateLayout = () => {
-      setDimensions(Dimensions.get('window'));
+      setDimensions(Dimensions.get("window"));
     };
 
-    Dimensions.addEventListener('change', updateLayout);
-    return () => Dimensions.removeEventListener('change', updateLayout);
+    Dimensions.addEventListener("change", updateLayout);
+    return () => Dimensions.removeEventListener("change", updateLayout);
   }, []);
 
   const styles = StyleSheet.create({
@@ -55,14 +94,14 @@ function EditProcedureScreen({ route, navigation }) {
       paddingHorizontal: dimensions.width < 768 ? 10 : 30,
     },
     checkboxContainerStyle: {
-      flexDirection: 'row', 
-      alignItems: 'center', 
-      margin: 5, 
-      padding: 8, 
-      borderWidth: 1, 
-      borderColor: '#d1d1d1', 
+      flexDirection: "row",
+      alignItems: "center",
+      margin: 5,
+      padding: 8,
+      borderWidth: 1,
+      borderColor: "#d1d1d1",
       borderRadius: 5,
-      backgroundColor: '#ffffff', 
+      backgroundColor: "#ffffff",
       shadowColor: "#000",
       shadowOffset: {
         width: 0,
@@ -70,7 +109,7 @@ function EditProcedureScreen({ route, navigation }) {
       },
       shadowOpacity: 0.25,
       shadowRadius: 3.84,
-      elevation: 5
+      elevation: 5,
     },
     previewImage: {
       width: 100,
@@ -83,49 +122,49 @@ function EditProcedureScreen({ route, navigation }) {
     },
     uploadTitle: {
       fontSize: 24,
-      fontWeight: '400',
+      fontWeight: "400",
       marginVertical: 8,
-      textAlign: 'center'
+      textAlign: "center",
     },
     dropzone: {
       height: 50,
-      borderColor: 'gray',
+      borderColor: "gray",
       borderWidth: 1,
       borderRadius: 8,
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexDirection: 'row'
+      alignItems: "center",
+      justifyContent: "center",
+      flexDirection: "row",
     },
     uploadedFileName: {
       marginLeft: 10,
     },
     modalContainer: {
       flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
     },
     modalImage: {
-      width: '90%',
-      height: 'auto',
+      width: "90%",
+      height: "auto",
       marginVertical: 10,
       borderRadius: 10,
     },
     imageText: {
       fontSize: 18,
       marginTop: 10,
-      textAlign: 'center',
-      color: 'blue'
+      textAlign: "center",
+      color: "blue",
     },
   });
 
   const selectImages = (event) => {
     const files = event.target.files;
     if (files) {
-        const imagesArray = Array.from(files);
-        setUploadedImages(imagesArray);
+      const imagesArray = Array.from(files);
+      setUploadedImages(imagesArray);
     }
-  }
+  };
 
   const uploadImages = async (uploadedImages, docId) => {
     const storageURLs = [];
@@ -135,7 +174,7 @@ function EditProcedureScreen({ route, navigation }) {
       const downloadURL = await getDownloadURL(imageRef);
       storageURLs.push(downloadURL);
     });
-  
+
     await Promise.all(uploadPromises);
     return storageURLs;
   };
@@ -160,8 +199,8 @@ function EditProcedureScreen({ route, navigation }) {
             padding: 10,
             fontSize: 16,
             width: "95%",
-            backgroundColor: '#FEF0E6',
-            borderColor: '#FEF0E6',
+            backgroundColor: "#FEF0E6",
+            borderColor: "#FEF0E6",
             borderWidth: 1,
             borderRadius: 10,
           }}
@@ -189,23 +228,24 @@ function EditProcedureScreen({ route, navigation }) {
   };
 
   const onSelectTeacher = (selectedTeacherId) => {
-    const selectedTeacher = teachers.find(teacher => teacher.key === selectedTeacherId);
+    const selectedTeacher = teachers.find(
+      (teacher) => teacher.key === selectedTeacherId
+    );
     // console.log(selectedTeacher)
     if (selectedTeacher) {
-        setApprovedByName(selectedTeacher.value);
-        setApprovedById(selectedTeacher.key);
+      setApprovedByName(selectedTeacher.value);
+      setApprovedById(selectedTeacher.key);
     } else {
-        console.error('Teacher not found:', selectedTeacherId);
+      console.error("Teacher not found:", selectedTeacherId);
     }
-}
-  
+  };
 
   useEffect(() => {
     async function fetchMainProcedure() {
       try {
         const procedureTypeRef = collection(db, "procedures_type");
         const querySnapshot = await getDocs(procedureTypeRef);
-  
+
         const Procedure = [];
         querySnapshot.forEach((doc) => {
           const data = doc.data();
@@ -213,13 +253,13 @@ function EditProcedureScreen({ route, navigation }) {
             Procedure.push({ key: disease, value: disease });
           });
         });
-  
+
         setMainProcedure(Procedure);
       } catch (error) {
         console.error("Error fetching main procedure:", error);
       }
     }
-  
+
     fetchMainProcedure();
   }, []);
 
@@ -228,37 +268,36 @@ function EditProcedureScreen({ route, navigation }) {
       try {
         const teacherRef = collection(db, "users");
         const q = query(teacherRef, where("role", "==", "teacher")); // ใช้ query และ where ในการ filter
-  
+
         const querySnapshot = await getDocs(q); // ใช้ query ที่ถูก filter ในการ getDocs
-        
+
         const teacherArray = [];
         querySnapshot.forEach((doc) => {
           const data = doc.data();
           teacherArray.push({ key: doc.id, value: data.displayName });
         });
-  
+
         setTeachers(teacherArray); // ตั้งค่ารายการอาจารย์
       } catch (error) {
         console.error("Error fetching teachers:", error);
       }
     }
-  
+
     fetchTeachers(); // เรียกฟังก์ชันเพื่อดึงข้อมูลอาจารย์
   }, []);
 
   const saveDataToFirestore = async () => {
     try {
-
       if (!selectedProcedures) {
         alert("โปรดเลือกประเภท");
         return;
       }
-      
+
       if (!hn) {
         alert("โปรดกรอก HN");
         return;
       }
-  
+
       if (!selectedDate) {
         alert("โปรดเลือกวันที่รับผู้ป่วย");
         return;
@@ -283,11 +322,11 @@ function EditProcedureScreen({ route, navigation }) {
         alert("ไม่พบข้อมูลผู้ใช้");
         return;
       }
-  
+
       // ปรับปรุง HN และปีพ.ศ. เพื่อให้ครบ 6 หลักและ 2 หลักตามที่ต้องการ
-      const formattedHN = lastHN.padStart(6, '0');
-      const formattedHNYear = hnYear.padStart(2, '0');
-    
+      const formattedHN = lastHN.padStart(6, "0");
+      const formattedHNYear = hnYear.padStart(2, "0");
+
       // รวม HN และปีพ.ศ. เข้าด้วยกัน
       const fullHN = formattedHNYear + formattedHN;
 
@@ -299,35 +338,44 @@ function EditProcedureScreen({ route, navigation }) {
         const procedureData = procedureDocSnapshot.data();
 
         if (procedureData.status === "reApproved") {
-          await updateDoc(procedureDocRef , {
+          await updateDoc(procedureDocRef, {
             admissionDate: Timestamp.fromDate(new Date(selectedDate)),
             hn: fullHN,
             procedureType: selectedProcedures,
             remarks: remarks,
-            approvedByName: teachers.find(t => t.key === approvedById)?.value,
+            approvedByName: teachers.find((t) => t.key === approvedById)?.value,
             approvedById: approvedById,
             procedureLevel: procedureLevel,
-            images: uploadedImages.length > 0 ? await uploadImages(uploadedImages, procedureData.id) : procedureData.images, // We'll store the image URLs in the next step
+            images:
+              uploadedImages.length > 0
+                ? await uploadImages(uploadedImages, procedureData.id)
+                : procedureData.images, // We'll store the image URLs in the next step
             hours: parseInt(selectedHour),
             minutes: parseInt(selectedMinute),
-            isEdited: true
+            isEdited: true,
           });
 
           alert("อัปเดตข้อมูลสำเร็จ");
-        } else if (procedureData.status === "pending" || procedureData.status === "rejected") {
-          await updateDoc(procedureDocRef , {
+        } else if (
+          procedureData.status === "pending" ||
+          procedureData.status === "rejected"
+        ) {
+          await updateDoc(procedureDocRef, {
             admissionDate: Timestamp.fromDate(new Date(selectedDate)),
             hn: fullHN,
             procedureType: selectedProcedures,
             remarks: remarks,
-            approvedByName: teachers.find(t => t.key === approvedById)?.value,
+            approvedByName: teachers.find((t) => t.key === approvedById)?.value,
             approvedById: approvedById,
             procedureLevel: procedureLevel,
-            images: uploadedImages.length > 0 ? await uploadImages(uploadedImages, procedureData.id) : procedureData.images, // We'll store the image URLs in the next step
+            images:
+              uploadedImages.length > 0
+                ? await uploadImages(uploadedImages, procedureData.id)
+                : procedureData.images, // We'll store the image URLs in the next step
             hours: parseInt(selectedHour),
             minutes: parseInt(selectedMinute),
             lastHN: formattedHN,
-            hnYear
+            hnYear,
           });
 
           alert("อัปเดตข้อมูลสำเร็จ");
@@ -341,52 +389,103 @@ function EditProcedureScreen({ route, navigation }) {
       console.error("Error updating document: ", error);
       alert("เกิดข้อผิดพลาดในการอัปเดตข้อมูล");
     }
-  };  
+  };
 
   return (
     <ScrollView>
       <View style={styles.container}>
-
-      <View style={{marginVertical: dimensions.width < 768 ? 40 : 60,}}>
-        <SubHeader text="EDIT PROCEDURE" />
-      </View>
-
-      <View style={{ flexDirection: dimensions.width < 768 ? 'column' : 'row', alignItems: 'left', marginBottom: 16, justifyContent: 'space-between' }}>
-        <View style={{ width: dimensions.width < 768 ? '100%' : '45%' }}>
-          <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left' }}>Procedure Admission Date</Text>
-          <DateInput />
+        <View style={{ marginVertical: dimensions.width < 768 ? 40 : 60 }}>
+          <SubHeader text="EDIT PROCEDURE" />
         </View>
-        <View style={{ width: dimensions.width < 768 ? '100%' : '45%', flexDirection: 'row', justifyContent: 'left', alignItems: 'left' }}>
-          <View>
-            <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left' }}>Procedure Admission Time</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'left' }}>
-              <SelectList
-                setSelected={setSelectedHour}
-                defaultOption={{ key: selectedHour, value: selectedHour }}
-                data={hours}
-                placeholder="Hours"
-                search={false}
-                boxStyles={{ width: 'auto', backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10 }}
-                dropdownStyles={{ backgroundColor: '#FEF0E6' }}
-              />
-              <Text style={{ marginHorizontal: 5, alignSelf: 'center' }}>:</Text>
-              <SelectList
-                setSelected={setSelectedMinute}
-                defaultOption={{ key: selectedMinute, value: selectedMinute }}
-                data={minutes}
-                placeholder="Minutes"
-                search={false}
-                boxStyles={{ width: 'auto', backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10  }}
-                dropdownStyles={{ backgroundColor: '#FEF0E6' }}
-              />
+
+        <View
+          style={{
+            flexDirection: dimensions.width < 768 ? "column" : "row",
+            alignItems: "left",
+            marginBottom: 16,
+            justifyContent: "space-between",
+          }}
+        >
+          <View style={{ width: dimensions.width < 768 ? "100%" : "45%" }}>
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: 400,
+                marginVertical: 8,
+                textAlign: "left",
+              }}
+            >
+              Procedure Admission Date
+            </Text>
+            <DateInput />
+          </View>
+          <View
+            style={{
+              width: dimensions.width < 768 ? "100%" : "45%",
+              flexDirection: "row",
+              justifyContent: "left",
+              alignItems: "left",
+            }}
+          >
+            <View>
+              <Text
+                style={{
+                  fontSize: 20,
+                  fontWeight: 400,
+                  marginVertical: 8,
+                  textAlign: "left",
+                }}
+              >
+                Procedure Admission Time
+              </Text>
+              <View style={{ flexDirection: "row", alignItems: "left" }}>
+                <SelectList
+                  setSelected={setSelectedHour}
+                  defaultOption={{ key: selectedHour, value: selectedHour }}
+                  data={hours}
+                  placeholder="Hours"
+                  search={false}
+                  boxStyles={{
+                    width: "auto",
+                    backgroundColor: "#FEF0E6",
+                    borderColor: "#FEF0E6",
+                    borderWidth: 1,
+                    borderRadius: 10,
+                  }}
+                  dropdownStyles={{ backgroundColor: "#FEF0E6" }}
+                />
+                <Text style={{ marginHorizontal: 5, alignSelf: "center" }}>
+                  :
+                </Text>
+                <SelectList
+                  setSelected={setSelectedMinute}
+                  defaultOption={{ key: selectedMinute, value: selectedMinute }}
+                  data={minutes}
+                  placeholder="Minutes"
+                  search={false}
+                  boxStyles={{
+                    width: "auto",
+                    backgroundColor: "#FEF0E6",
+                    borderColor: "#FEF0E6",
+                    borderWidth: 1,
+                    borderRadius: 10,
+                  }}
+                  dropdownStyles={{ backgroundColor: "#FEF0E6" }}
+                />
+              </View>
             </View>
           </View>
         </View>
-      </View>
 
-      <View style={{ flexDirection: dimensions.width < 768 ? 'column' : 'row', justifyContent: 'space-between', marginBottom: 16 }}>
-        <View style={{ width: dimensions.width < 768 ? '100%' : '45%' }}>
-        <Text
+        <View
+          style={{
+            flexDirection: dimensions.width < 768 ? "column" : "row",
+            justifyContent: "space-between",
+            marginBottom: 16,
+          }}
+        >
+          <View style={{ width: dimensions.width < 768 ? "100%" : "45%" }}>
+            <Text
               style={{
                 fontSize: 20,
                 fontWeight: 400,
@@ -397,158 +496,223 @@ function EditProcedureScreen({ route, navigation }) {
             >
               HN
             </Text>
-            <View style={{
-              flexDirection: 'row',
-              borderColor: '#FEF0E6',
-              borderWidth: 1,
-              borderRadius: 10,
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}>
-            <TextInput
-              placeholder="6-digit HN"
-              placeholderTextColor="grey"
-              value={lastHN}
-              onChangeText={setLastHN}
-              keyboardType="numeric"
-              maxLength={6}
+            <View
               style={{
-                flex: 1,
-                textAlign: 'center',
-                fontSize: 20,
-                backgroundColor: '#FEF0E6'
+                flexDirection: "row",
+                borderColor: "#FEF0E6",
+                borderWidth: 1,
+                borderRadius: 10,
+                alignItems: "center",
+                justifyContent: "space-between",
               }}
-            />
-            <Text style={{ marginHorizontal: 5 }}>/</Text>
-            <TextInput
-              placeholder="YY"
-              placeholderTextColor="grey"
-              value={hnYear}
-              onChangeText={setHNYear}
-              keyboardType="numeric"
-              maxLength={2}
-              style={{
-                width: 60,
-                textAlign: 'center',
-                fontSize: 20,
-                backgroundColor: '#FEF0E6'
-              }}
-            />
+            >
+              <TextInput
+                placeholder="6-digit HN"
+                placeholderTextColor="grey"
+                value={lastHN}
+                onChangeText={setLastHN}
+                keyboardType="numeric"
+                maxLength={6}
+                style={{
+                  flex: 1,
+                  textAlign: "center",
+                  fontSize: 20,
+                  backgroundColor: "#FEF0E6",
+                }}
+              />
+              <Text style={{ marginHorizontal: 5 }}>/</Text>
+              <TextInput
+                placeholder="YY"
+                placeholderTextColor="grey"
+                value={hnYear}
+                onChangeText={setHNYear}
+                keyboardType="numeric"
+                maxLength={2}
+                style={{
+                  width: 60,
+                  textAlign: "center",
+                  fontSize: 20,
+                  backgroundColor: "#FEF0E6",
+                }}
+              />
+            </View>
           </View>
-        </View>
-        <View style={{ width: dimensions.width < 768 ? '100%' : '45%' }}>
-          <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left', alignItems: 'flex-start' }}>Approver</Text>
+          <View style={{ width: dimensions.width < 768 ? "100%" : "45%" }}>
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: 400,
+                marginVertical: 8,
+                textAlign: "left",
+                alignItems: "flex-start",
+              }}
+            >
+              Approver
+            </Text>
             <SelectList
               setSelected={onSelectTeacher}
-              defaultOption={{  key: approvedById, value: approvedByName }}
+              defaultOption={{ key: approvedById, value: approvedByName }}
               data={teachers}
               placeholder={"Select the professor name"}
               placeholderTextColor="grey"
-              boxStyles={{ width: 'auto', backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10  }}
-              dropdownStyles={{ backgroundColor: '#FEF0E6' }}
+              boxStyles={{
+                width: "auto",
+                backgroundColor: "#FEF0E6",
+                borderColor: "#FEF0E6",
+                borderWidth: 1,
+                borderRadius: 10,
+              }}
+              dropdownStyles={{ backgroundColor: "#FEF0E6" }}
             />
-      </View>
-    </View>
+          </View>
+        </View>
 
-        <View style={{ marginBottom: 16, width: '70%' }}>
-          <Text style={{
-            fontSize: 20,
-            fontWeight: 400,
-            marginVertical: 8,
-            textAlign: 'left'
-
-          }}>Procedure</Text>
+        <View style={{ marginBottom: 16, width: "70%" }}>
+          <Text
+            style={{
+              fontSize: 20,
+              fontWeight: 400,
+              marginVertical: 8,
+              textAlign: "left",
+            }}
+          >
+            Procedure
+          </Text>
           <SelectList
             setSelected={setSelectedProcedures}
-            defaultOption={{ key: selectedProcedures, value: selectedProcedures }}
+            defaultOption={{
+              key: selectedProcedures,
+              value: selectedProcedures,
+            }}
             data={mainProcedure}
             placeholder={"Select a procedure"}
-            boxStyles={{ width: 'auto', backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10  }}
-            dropdownStyles={{ backgroundColor: '#FEF0E6' }}
+            boxStyles={{
+              width: "auto",
+              backgroundColor: "#FEF0E6",
+              borderColor: "#FEF0E6",
+              borderWidth: 1,
+              borderRadius: 10,
+            }}
+            dropdownStyles={{ backgroundColor: "#FEF0E6" }}
           />
         </View>
 
-        <View style={{ marginBottom: 16, width: '70%' }}>
-          <Text style={{
+        <View style={{ marginBottom: 16, width: "70%" }}>
+          <Text
+            style={{
               fontSize: 20,
               fontWeight: 400,
               marginVertical: 8,
-              textAlign: 'left'
+              textAlign: "left",
+            }}
+          >
+            Level (เลือกได้เพียง 1 ตัวเลือก)
+          </Text>
 
-            }}>Level (เลือกได้เพียง 1 ตัวเลือก)</Text>
-
-            <View style={{ flexDirection: dimensions.width < 768 ? 'column' : 'row', justifyContent: 'space-between', width: '100%'}}>
-              <View style={styles.checkboxContainerStyle}>
-                <CheckBox value={procedureLevel === 1} onValueChange={() => setProcedureLevel(1)} />
-                <Text style={{ marginLeft: 5, fontSize: 20 }}>Observe</Text>
-              </View>
-              <View style={styles.checkboxContainerStyle}>
-                <CheckBox value={procedureLevel === 2} onValueChange={() => setProcedureLevel(2)} />
-                <Text style={{ marginLeft: 5, fontSize: 20 }}>Assist</Text>
-              </View>
-              <View style={styles.checkboxContainerStyle}>
-                <CheckBox value={procedureLevel === 3} onValueChange={() => setProcedureLevel(3)} />
-                <Text style={{ marginLeft: 5, fontSize: 20 }}>Perform</Text>
-              </View>
+          <View
+            style={{
+              flexDirection: dimensions.width < 768 ? "column" : "row",
+              justifyContent: "space-between",
+              width: "100%",
+            }}
+          >
+            <View style={styles.checkboxContainerStyle}>
+              <CheckBox
+                value={procedureLevel === 1}
+                onValueChange={() => setProcedureLevel(1)}
+              />
+              <Text style={{ marginLeft: 5, fontSize: 20 }}>Observe</Text>
             </View>
+            <View style={styles.checkboxContainerStyle}>
+              <CheckBox
+                value={procedureLevel === 2}
+                onValueChange={() => setProcedureLevel(2)}
+              />
+              <Text style={{ marginLeft: 5, fontSize: 20 }}>Assist</Text>
+            </View>
+            <View style={styles.checkboxContainerStyle}>
+              <CheckBox
+                value={procedureLevel === 3}
+                onValueChange={() => setProcedureLevel(3)}
+              />
+              <Text style={{ marginLeft: 5, fontSize: 20 }}>Perform</Text>
+            </View>
+          </View>
         </View>
 
-        <View style={{ marginBottom: 16, width: '70%', }}>
-            <Text style={{
+        <View style={{ marginBottom: 16, width: "70%" }}>
+          <Text
+            style={{
               fontSize: 20,
               fontWeight: 400,
               marginVertical: 8,
-              textAlign: 'left'
-
-            }}>Note / Reflection (optional)</Text>
-          <View style={{
-            height: 260,
-            borderColor: '#FEF0E6',
-            borderWidth: 1,
-            borderRadius: 10,
-            backgroundColor: '#FEF0E6'
-          }}>
+              textAlign: "left",
+            }}
+          >
+            Note / Reflection (optional)
+          </Text>
+          <View
+            style={{
+              height: 260,
+              borderColor: "#FEF0E6",
+              borderWidth: 1,
+              borderRadius: 10,
+              backgroundColor: "#FEF0E6",
+            }}
+          >
             <TextInput
-              placeholder={isFocused ? '' : "Fill a note/reflection"}
+              placeholder={isFocused ? "" : "Fill a note/reflection"}
               placeholderTextColor="grey"
               onFocus={() => setIsFocused(true)}
               value={remarks}
               onChangeText={setRemarks}
               multiline
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  textAlign: 'left', // ตั้งค่าให้ข้อความจัดชิดซ้าย
-                  textAlignVertical: 'top', // ตั้งค่าให้ข้อความเริ่มที่บน
-                  paddingTop: 8, // พิจารณาเพิ่ม padding ด้านบน
-                  paddingLeft: 8, // พิจารณาเพิ่ม padding ด้านซ้าย
-                  fontSize: 20
-                }}
+              style={{
+                width: "100%",
+                height: "100%",
+                textAlign: "left", // ตั้งค่าให้ข้อความจัดชิดซ้าย
+                textAlignVertical: "top", // ตั้งค่าให้ข้อความเริ่มที่บน
+                paddingTop: 8, // พิจารณาเพิ่ม padding ด้านบน
+                paddingLeft: 8, // พิจารณาเพิ่ม padding ด้านซ้าย
+                fontSize: 20,
+              }}
             ></TextInput>
           </View>
         </View>
 
-    {/* UI for image upload */}
-      <View style={styles.uploadContainer}>
-        <Text style={styles.uploadTitle}>
-          Upload Images ( Unable to support files larger than 5 MB.)  
-            (Optinal)</Text>
-        <View style={styles.dropzone}>
-          <input type="file" accept="image/*" multiple onChange={selectImages} />
+        {/* UI for image upload */}
+        <View style={styles.uploadContainer}>
+          <Text style={styles.uploadTitle}>
+            Upload Images ( Unable to support files larger than 5 MB.) (Optinal)
+          </Text>
+          <View style={styles.dropzone}>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={selectImages}
+            />
+          </View>
         </View>
-      </View>
 
-      <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: '10%' }}>
-        <TouchableOpacity
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "center",
+            alignItems: "center",
+            marginBottom: "10%",
+          }}
+        >
+          <TouchableOpacity
             onPress={saveDataToFirestore}
             style={{
               height: 48,
               width: 120,
-              justifyContent: 'center',
-              alignItems: 'center',
-              backgroundColor: '#008000',
+              justifyContent: "center",
+              alignItems: "center",
+              backgroundColor: "#008000",
               borderRadius: 30,
-              shadowColor: '#000',
+              shadowColor: "#000",
               shadowOffset: {
                 width: 0,
                 height: 2,
@@ -556,10 +720,10 @@ function EditProcedureScreen({ route, navigation }) {
               shadowOpacity: 0.25,
               shadowRadius: 4,
               elevation: 5,
-              marginRight: 20
+              marginRight: 20,
             }}
           >
-            <Text style={{ fontSize: 20, color: 'white' }}>Save</Text>
+            <Text style={{ fontSize: 20, color: "white" }}>Save</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
@@ -567,11 +731,11 @@ function EditProcedureScreen({ route, navigation }) {
               height: 48,
               width: 120,
               marginRight: 10,
-              justifyContent: 'center',
-              alignItems: 'center',
-              backgroundColor: 'grey',
+              justifyContent: "center",
+              alignItems: "center",
+              backgroundColor: "grey",
               borderRadius: 30,
-              shadowColor: '#000',
+              shadowColor: "#000",
               shadowOffset: {
                 width: 0,
                 height: 2,
@@ -581,7 +745,7 @@ function EditProcedureScreen({ route, navigation }) {
               elevation: 5,
             }}
           >
-            <Text style={{ fontSize: 20, color: 'white' }}>Back</Text>
+            <Text style={{ fontSize: 20, color: "white" }}>Back</Text>
           </TouchableOpacity>
         </View>
       </View>
