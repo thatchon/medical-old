@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, Text, Button, StyleSheet, TouchableOpacity, TextInput, CheckBox, Platform, ScrollView, Dimensions} from "react-native";
 import { SelectList } from "react-native-dropdown-select-list";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { useSelector } from "react-redux";
 import { db, auth, storage } from '../../data/firebaseDB'
 import { getDocs, addDoc, collection, query, where, Timestamp, updateDoc } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
@@ -14,6 +15,7 @@ function AddProcedureScreen({ navigation }) {
   const [mainProcedure, setMainProcedure] = useState([]); // State to store main Procedure
 
   const [hn, setHN] = useState(""); // HN
+  const [hnYear, setHNYear] = useState(""); // ปีพ.ศ.
   const [remarks, setRemarks] = useState(""); // remarks
   const status = "pending"; // Status
   const [createBy_id, setCreateById] = useState(null); // User ID
@@ -31,6 +33,7 @@ function AddProcedureScreen({ navigation }) {
   const [uploadedImages, setUploadedImages] = useState([]);
 
   const [dimensions, setDimensions] = useState(Dimensions.get('window'));
+  const subject = useSelector((state) => state.subject);
 
   const hours = Array.from({ length: 24 }, (_, i) => ({ key: i.toString(), value: i.toString() }));
   const minutes = Array.from({ length: 60 }, (_, i) => ({ key: i.toString(), value: i.toString() }));
@@ -55,7 +58,20 @@ function AddProcedureScreen({ navigation }) {
     checkboxContainerStyle: {
       flexDirection: 'row', 
       alignItems: 'center', 
-      marginVertical: 10
+      margin: 5, 
+      padding: 8, 
+      borderWidth: 1, 
+      borderColor: '#d1d1d1', 
+      borderRadius: 5,
+      backgroundColor: '#ffffff', 
+      shadowColor: "#000",
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      elevation: 5
     },
     previewImage: {
       width: 100,
@@ -238,8 +254,8 @@ function AddProcedureScreen({ navigation }) {
         return;
       }
       
-      if (!hn) {
-        alert("โปรดกรอก HN");
+      if (!hn || !hnYear) {
+        alert("โปรดกรอก HN และปีพ.ศ.");
         return;
       }
   
@@ -267,14 +283,19 @@ function AddProcedureScreen({ navigation }) {
         alert("ไม่พบข้อมูลผู้ใช้");
         return;
       }
+      // ปรับปรุง HN และปีพ.ศ. เพื่อให้ครบ 6 หลักและ 2 หลักตามที่ต้องการ
+      const formattedHN = hn.padStart(6, '0');
+      const formattedHNYear = hnYear.padStart(2, '0');
   
+      // รวม HN และปีพ.ศ. เข้าด้วยกัน
+      const fullHN = formattedHNYear + formattedHN;
       const timestamp = Timestamp.fromDate(selectedDate);
   
       // Step 1: Save patient data (excluding images) and retrieve the Document ID
       const docRef = await addDoc(collection(db, "procedures"), {
         admissionDate: timestamp,
         createBy_id: user.uid,
-        hn: hn,
+        hn: fullHN,
         procedureType: selectedProcedures,
         remarks: remarks,
         approvedByName: approvedByName,
@@ -283,7 +304,10 @@ function AddProcedureScreen({ navigation }) {
         procedureLevel: procedureLevel,
         images: [], // We'll store the image URLs in the next step
         hours: selectedHour,
-        minutes: selectedMinute
+        minutes: selectedMinute,
+        subject,
+        lastHN: formattedHN,
+        hnYear
       });
   
       // Step 2: Use the Document ID as a folder name for image uploads and then update image URLs in Firestore
@@ -292,6 +316,7 @@ function AddProcedureScreen({ navigation }) {
   
       // Clear the input fields and states
       setHN("");
+      setHNYear("");
       setSelectedDate(new Date());
       setSelectedProcedures("");
       setRemarks("");
@@ -347,29 +372,55 @@ function AddProcedureScreen({ navigation }) {
 
       <View style={{ flexDirection: dimensions.width < 768 ? 'column' : 'row', justifyContent: 'space-between', marginBottom: 16 }}>
         <View style={{ width: dimensions.width < 768 ? '100%' : '45%' }}>
-          <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left', alignItems: 'flex-start' }}>HN</Text>
+        <Text
+              style={{
+                fontSize: 20,
+                fontWeight: 400,
+                marginVertical: 8,
+                textAlign: "left",
+                alignItems: "flex-start",
+              }}
+            >
+              HN
+            </Text>
             <View style={{
-              height: 48,
+              flexDirection: 'row',
               borderColor: '#FEF0E6',
               borderWidth: 1,
               borderRadius: 10,
-              alignItems: 'left',
-              justifyContent: 'left',
+              alignItems: 'center',
+              justifyContent: 'space-between',
             }}>
-              <TextInput
-                placeholder="Fill the hospital number"
-                placeholderTextColor="grey"
-                value={hn}
-                onChangeText={setHN}
-                style={{
-                  width: '100%',
-                  textAlign: 'center',
-                  height: '100%',
-                  fontSize: 20,
-                  backgroundColor: '#FEF0E6'
-                }}
-              />
-            </View>
+            <TextInput
+              placeholder="6-digit HN"
+              placeholderTextColor="grey"
+              value={hn}
+              onChangeText={setHN}
+              keyboardType="numeric"
+              maxLength={6}
+              style={{
+                flex: 1,
+                textAlign: 'center',
+                fontSize: 20,
+                backgroundColor: '#FEF0E6'
+              }}
+            />
+            <Text style={{ marginHorizontal: 5 }}>/</Text>
+            <TextInput
+              placeholder="YY"
+              placeholderTextColor="grey"
+              value={hnYear}
+              onChangeText={setHNYear}
+              keyboardType="numeric"
+              maxLength={2}
+              style={{
+                width: 60,
+                textAlign: 'center',
+                fontSize: 20,
+                backgroundColor: '#FEF0E6'
+              }}
+            />
+          </View>
         </View>
         <View style={{ width: dimensions.width < 768 ? '100%' : '45%' }}>
           <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left', alignItems: 'flex-start' }}>Approver</Text>

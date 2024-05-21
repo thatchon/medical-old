@@ -27,24 +27,6 @@ const SelectRoleScreen = ({ navigation }) => {
     dispatch(setRole(role));
     navigation.navigate('Login', { role });
   };
-  // const handleRoleToggle = (role) => {
-  //   if (selectedRole === role) {
-  //     setSelectedRole(null);
-  //   } else {
-  //     setSelectedRole(role);
-  //   }
-  // };
-
-  // const handleContinue = () => {
-  //   if (selectedRole) {
-  //     dispatch(setRole(selectedRole));
-  //     navigation.navigate('Login', { role: selectedRole });
-  //   }
-  // };
-
-  const fontSizeDynamic = screenWidth < 768 ? 37 : 52;
-  const roleButtonTextSize = screenWidth < 768 ? 20 : 48;
-  const continueButtonTextSize = screenWidth < 768 ? 22 : 28;
 
   return (
     <View style={styles.container}>
@@ -89,12 +71,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  titletext: {
-    color: 'black',
-    fontWeight: 'bold',
-    fontSize: 52,
-    padding: 20,
   },
   roleButton: {
     height: 80,

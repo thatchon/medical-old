@@ -3,7 +3,7 @@ import { View, Text, Button, StyleSheet, TouchableOpacity, TextInput, Platform, 
 import { SelectList } from "react-native-dropdown-select-list";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { db, auth, storage } from '../../data/firebaseDB'
-import { getDocs, addDoc, collection, query, where, Timestamp, updateDoc } from "firebase/firestore";
+import { getDocs, addDoc, collection, query, where, Timestamp, updateDoc, doc, getDoc } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import SubHeader from '../../component/SubHeader';  
 
@@ -12,8 +12,11 @@ function EditActivityScreen({ route, navigation }) {
 
   const [selectedDate, setSelectedDate] = useState(activityData.admissionDate.toDate());
 
-  const [selectedDiagnosis, setSelectedDiagnosis] = useState(activityData.mainDiagnosis || []); // State for selected diagnosis
-  const [mainDiagnoses, setMainDiagnoses] = useState([]); // State to store main diagnoses
+  const [mainDiagnosis, setMainDiagnosis] = useState(""); // ใช้ TextInput สำหรับ Main Diagnosis
+  const [selectedDiagnosis, setSelectedDiagnosis] = useState([{}]); // เก็บโรคที่เลือกทั้งหมด
+  const [mainDiagnoses, setMainDiagnoses] = useState([]); // เก็บรายชื่อโรค
+  const [otherDiagnosis, setOtherDiagnosis] = useState(""); // ใช้ TextInput สำหรับโรคอื่นๆ
+  const [isOtherSelected, setIsOtherSelected] = useState(false); // ตัวแปรสำหรับตรวจสอบว่าเลือก Other หรือไม่
 
   const [professorId, setProfessorId] = useState(activityData.professorId);
   const [professorName, setProfessorName] = useState(activityData.professorName); // สถานะสำหรับเก็บชื่ออาจารย์ที่ถูกเลือก
@@ -177,26 +180,30 @@ function EditActivityScreen({ route, navigation }) {
     }
   }
 
-  useEffect(() => {
-    async function fetchMainDiagnoses() {
-      try {
-        const mainDiagnosisRef = collection(db, "mainDiagnosis");
-        const querySnapshot = await getDocs(mainDiagnosisRef);
+  const fetchMainDiagnoses = async () => {
+    try {
+      const mainDiagnosisDocRef = doc(db, "mainDiagnosis", "LcvLDMSEraOH9zH4fbmS");
+      const docSnap = await getDoc(mainDiagnosisDocRef);
   
-        const diagnoses = [];
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          data.diseases.forEach((disease) => {
-            diagnoses.push({ key: disease, value: disease });
-          });
-        });
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const diagnoses = data.diseases.map((disease, index) => ({
+          key: `${(index + 1).toString().padStart(3, '0')} | ${disease}`, // ปรับแก้ที่นี่เพื่อให้ key เป็นชื่อโรคด้วย
+          value: `${(index + 1).toString().padStart(3, '0')} | ${disease}`
+        }));
+  
+        diagnoses.sort((a, b) => a.value.localeCompare(b.value));
   
         setMainDiagnoses(diagnoses);
-      } catch (error) {
-        console.error("Error fetching main diagnoses:", error);
+      } else {
+        console.log("No such document!");
       }
+    } catch (error) {
+      console.error("Error fetching main diagnoses:", error);
     }
+  }
   
+  useEffect(() => {
     fetchMainDiagnoses();
   }, []);
 
@@ -249,8 +256,8 @@ function EditActivityScreen({ route, navigation }) {
   const saveDataToFirestore = async () => {
     try {
 
-      if (!selectedDiagnosis) {
-        alert("โปรดกรอก Main Diagnosis");
+      if (!mainDiagnosis && !otherDiagnosis) {
+        alert("โปรดกรอก Main Diagnosis หรือใส่โรคอื่นๆ");
         return;
       }
       
@@ -281,30 +288,54 @@ function EditActivityScreen({ route, navigation }) {
       }
   
       // Step 1: Save patient data (excluding images) and retrieve the Document ID
-      const docRef = doc(db, "activity", activityData.id);
-      await updateDoc(docRef, {
+      const activityDocRef = doc(db, "activity", activityData.id);
+      const activityDocSnapshot = await getDoc(activityDocRef);
+
+      if (activityDocSnapshot.exists()) {
+        const activityData = activityDocSnapshot.data();
+
+      if (activityData.status === "reApproved") {
+      await updateDoc(activityDocRef, {
         admissionDate: Timestamp.fromDate(new Date(selectedDate)),
         activityType: selectedActivityType, // Activity
         createBy_id: user.uid, // User ID
-        mainDiagnosis: selectedDiagnosis,
+        mainDiagnosis: isOtherSelected ? otherDiagnosis : mainDiagnosis,
         note: note, // Note
         professorName: teachers.find(t => t.key === professorId)?.value,
         professorId: professorId,
-        images: [], // We'll store the image URLs in the next step
+        images: uploadedImages.length > 0 ? await uploadImages(uploadedImages, activityData.id) : activityData.images, // We'll store the image URLs in the next step
         hours: parseInt(selectedHour),
-        minutes: parseInt(selectedMinute)
+        minutes: parseInt(selectedMinute),
+        isEdited: true
       });
-  
-      // Step 2: Use the Document ID as a folder name for image uploads and then update image URLs in Firestore
-      const imageUrls = await uploadImages(uploadedImages, docRef.id);
-      await updateDoc(docRef, { images: imageUrls });
-  
+
       alert("อัปเดตข้อมูลสำเร็จ");
+    } else if (activityData.status === "pending" || activityData.status === "rejected") {
+        await updateDoc(activityDocRef, {
+          admissionDate: Timestamp.fromDate(new Date(selectedDate)),
+          activityType: selectedActivityType, // Activity
+          createBy_id: user.uid, // User ID
+          mainDiagnosis: isOtherSelected ? otherDiagnosis : mainDiagnosis,
+          note: note, // Note
+          professorName: teachers.find(t => t.key === professorId)?.value,
+          professorId: professorId,
+          images: uploadedImages.length > 0 ? await uploadImages(uploadedImages, activityData.id) : activityData.images, // We'll store the image URLs in the next step
+          hours: parseInt(selectedHour),
+          minutes: parseInt(selectedMinute),
+        });
+
+        alert("อัปเดตข้อมูลสำเร็จ");
+        } else {
+          alert("ไม่สามารถอัปเดตข้อมูลได้");
+        }
+      } else {
+        alert("ไม่สามารถอัปเดตข้อมูลได้");
+      }
     } catch (error) {
-      console.error("Error adding document: ", error);
+      console.error("Error updating document: ", error);
       alert("เกิดข้อผิดพลาดในการอัปเดตข้อมูล");
     }
-  };
+  };  
 
   return (
     <ScrollView>
@@ -394,15 +425,57 @@ function EditActivityScreen({ route, navigation }) {
             marginVertical: 8,
             textAlign: 'left'
 
-          }}>Topic</Text>
-          <SelectList
-            setSelected={setSelectedDiagnosis}
-            defaultOption={{ key: selectedDiagnosis, value: selectedDiagnosis }}
-            data={mainDiagnoses}
-            placeholder={"เลือกการวินิฉัย"}
-            boxStyles={{ width: 'auto', backgroundColor: '#FEF0E6', borderColor: '#FEF0E6', borderWidth: 1, borderRadius: 10  }}
-            dropdownStyles={{ backgroundColor: '#FEF0E6' }}
-          />
+          }}>Topic (ถ้าไม่มีตัวเลือก ให้เลือก Other)</Text>
+          {isOtherSelected ? (
+            <View
+              style={{
+                height: 48,
+                borderColor: "#FEF0E6",
+                borderWidth: 1,
+                borderRadius: 10,
+                alignItems: "left",
+                justifyContent: "left",
+                marginVertical: 8,
+              }}
+            >
+              <TextInput
+                placeholder="Fill the main diagnosis"
+                placeholderTextColor="grey"
+                value={otherDiagnosis} // Display otherDiagnosis value here
+                onChangeText={setOtherDiagnosis}
+                style={{
+                  width: "100%",
+                  textAlign: "center",
+                  height: "100%",
+                  fontSize: 20,
+                  backgroundColor: "#FEF0E6",
+                }}
+              />
+            </View>
+          ) : (
+            <SelectList
+              setSelected={(value) => {
+                if (value === "Other") {
+                  setIsOtherSelected(true);
+                  setMainDiagnosis(""); // เปลี่ยนเป็น string และกำหนดให้เป็นค่าว่างเมื่อเลือก Other
+                } else {
+                  setIsOtherSelected(false);
+                  setMainDiagnosis(value); // เปลี่ยนค่า mainDiagnosis เมื่อเลือก diagnosis อื่น
+                }
+              }}
+              data={[...mainDiagnoses, { key: "Other", value: "Other" }]}
+              placeholder={"Select a diagnosis"}
+              defaultOption={{ key: mainDiagnosis, value: mainDiagnosis }} // กำหนด defaultOption ให้เป็นค่า mainDiagnosis ปัจจุบัน
+              boxStyles={{
+                width: "auto",
+                backgroundColor: "#FEF0E6",
+                borderColor: "#FEF0E6",
+                borderWidth: 1,
+                borderRadius: 10,
+              }}
+              dropdownStyles={{ backgroundColor: "#FEF0E6" }}
+            />
+          )}
         </View>
 
         <View style={{ marginBottom: 16, width: '70%', }}>

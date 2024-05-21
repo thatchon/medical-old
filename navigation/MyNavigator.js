@@ -4,6 +4,7 @@ import { useWindowDimensions } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
 import SelectRoleScreen from '../screens/SelectRoleScreen';
+import SelectSubjectScreen from '../screens/SelectSubjectScreen';
 import LoginScreen from '../screens/LoginScreen';
 import HomeScreen from '../screens/HomeScreen';
 import IpdScreen from '../screens/IpdScreen';
@@ -337,6 +338,19 @@ function MyNavigator() {
 
         <Stack.Screen name="Login" component={LoginScreen} options={{
           title: 'เข้าสู่ระบบ',
+          headerShown: false,
+          headerStyle: {
+            backgroundColor: '#7274AE',
+          },
+          headerTintColor: '#fff',
+          headerTitleAlign: 'center',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
+        }} />
+
+        <Stack.Screen name="Subject" component={SelectSubjectScreen} options={{
+          title: 'เลือกรายวิชา',
           headerShown: false,
           headerStyle: {
             backgroundColor: '#7274AE',

@@ -14,7 +14,6 @@ import Footer from '../component/Footer';
 const LoginScreen = ({ route, navigation }) => {
   const { role } = route.params;
   const dispatch = useDispatch();
-  const loggedInUser = useSelector((state) => state.user);
   const loggedInRole = useSelector((state) => state.role);
 
   const [email, setEmail] = useState('');
@@ -64,7 +63,11 @@ const LoginScreen = ({ route, navigation }) => {
           if (foundUser) {
             dispatch(setUser(foundUser));
             dispatch(setRole(role));
-            navigation.navigate('Home');
+            if (role === 'student') {
+              navigation.navigate('Subject');
+            } else {
+              navigation.navigate('Home');
+            }
           } else {
             setErrorMessage('บทบาทของผู้ใช้ไม่ตรงกับที่คุณเลือก');
           }
@@ -166,12 +169,6 @@ const LoginScreen = ({ route, navigation }) => {
         <Text style={{ fontSize: loginButtonFontSize, color: 'white', textAlign: 'center', fontWeight: 'bold' }}>Login</Text>
       </TouchableOpacity>
       <Text style={{ color: 'red', marginTop: 10, textAlign: 'center' }}>{errorMessage}</Text>
-      {/* <Text
-        style={styles.passwordResetLink}
-        onPress={() => navigation.navigate('ResetPassword')}
-      >
-        เปลี่ยนรหัสผ่าน
-      </Text> */}
       <Text
         style={[styles.passwordResetLink, { textAlign: 'center', fontSize: backFontSize }]}
         onPress={() => navigation.goBack()}

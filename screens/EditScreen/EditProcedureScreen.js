@@ -3,7 +3,7 @@ import { View, Text, Button, StyleSheet, TouchableOpacity, TextInput, CheckBox, 
 import { SelectList } from "react-native-dropdown-select-list";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { db, auth, storage } from '../../data/firebaseDB'
-import { getDocs, addDoc, collection, query, where, Timestamp, updateDoc, doc } from "firebase/firestore";
+import { getDocs, addDoc, collection, query, where, Timestamp, updateDoc, doc, getDoc } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import SubHeader from '../../component/SubHeader'; 
 
@@ -16,6 +16,8 @@ function EditProcedureScreen({ route, navigation }) {
   const [mainProcedure, setMainProcedure] = useState([]); // State to store main Procedure
 
   const [hn, setHN] = useState(procedureData.hn); // HN
+  const [hnYear, setHNYear] = useState(procedureData.hnYear);
+  const [lastHN, setLastHN] = useState(procedureData.lastHN);
   const [remarks, setRemarks] = useState(procedureData.remarks); // remarks
   const [approvedById, setApprovedById] = useState(procedureData.approvedById); // สถานะสำหรับเก็บ id ของอาจารย์ที่ถูกเลือก
   const [approvedByName, setApprovedByName] = useState(procedureData.approvedByName); // สถานะสำหรับเก็บชื่ออาจารย์ที่ถูกเลือก
@@ -34,9 +36,7 @@ function EditProcedureScreen({ route, navigation }) {
 
   const hours = Array.from({ length: 24 }, (_, i) => ({ key: i.toString(), value: i.toString() }));
   const minutes = Array.from({ length: 60 }, (_, i) => ({ key: i.toString(), value: i.toString() }));
-  useEffect(() => {
-    console.log("Hours:", mainProcedure); // ตรวจสอบข้อมูลชั่วโมง
-  }, [mainProcedure]);
+
   useEffect(() => {
     const updateLayout = () => {
       setDimensions(Dimensions.get('window'));
@@ -284,31 +284,64 @@ function EditProcedureScreen({ route, navigation }) {
         return;
       }
   
+      // ปรับปรุง HN และปีพ.ศ. เพื่อให้ครบ 6 หลักและ 2 หลักตามที่ต้องการ
+      const formattedHN = lastHN.padStart(6, '0');
+      const formattedHNYear = hnYear.padStart(2, '0');
+    
+      // รวม HN และปีพ.ศ. เข้าด้วยกัน
+      const fullHN = formattedHNYear + formattedHN;
+
       // Step 1: Save patient data (excluding images) and retrieve the Document ID
+      const procedureDocRef = doc(db, "procedures", procedureData.id);
+      const procedureDocSnapshot = await getDoc(procedureDocRef);
 
-      const docRef = doc(db, "procedures", procedureData.id);
-      await updateDoc(docRef, {
-        admissionDate: Timestamp.fromDate(new Date(selectedDate)),
-        hn,
-        procedureType: selectedProcedures,
-        remarks: remarks,
-        approvedByName: teachers.find(t => t.key === approvedById)?.value,
-        approvedById: approvedById,
-        procedureLevel: procedureLevel,
-        images: [], // We'll store the image URLs in the next step
-        hours: parseInt(selectedHour),
-        minutes: parseInt(selectedMinute)
-      });
-  
-      const imageUrls = await uploadImages(uploadedImages, docRef.id);
-      await updateDoc(docRef, { images: imageUrls });
+      if (procedureDocSnapshot.exists()) {
+        const procedureData = procedureDocSnapshot.data();
 
-      alert("อัปเดตข้อมูลสำเร็จ");
+        if (procedureData.status === "reApproved") {
+          await updateDoc(procedureDocRef , {
+            admissionDate: Timestamp.fromDate(new Date(selectedDate)),
+            hn: fullHN,
+            procedureType: selectedProcedures,
+            remarks: remarks,
+            approvedByName: teachers.find(t => t.key === approvedById)?.value,
+            approvedById: approvedById,
+            procedureLevel: procedureLevel,
+            images: uploadedImages.length > 0 ? await uploadImages(uploadedImages, procedureData.id) : procedureData.images, // We'll store the image URLs in the next step
+            hours: parseInt(selectedHour),
+            minutes: parseInt(selectedMinute),
+            isEdited: true
+          });
+
+          alert("อัปเดตข้อมูลสำเร็จ");
+        } else if (procedureData.status === "pending" || procedureData.status === "rejected") {
+          await updateDoc(procedureDocRef , {
+            admissionDate: Timestamp.fromDate(new Date(selectedDate)),
+            hn: fullHN,
+            procedureType: selectedProcedures,
+            remarks: remarks,
+            approvedByName: teachers.find(t => t.key === approvedById)?.value,
+            approvedById: approvedById,
+            procedureLevel: procedureLevel,
+            images: uploadedImages.length > 0 ? await uploadImages(uploadedImages, procedureData.id) : procedureData.images, // We'll store the image URLs in the next step
+            hours: parseInt(selectedHour),
+            minutes: parseInt(selectedMinute),
+            lastHN: formattedHN,
+            hnYear
+          });
+
+          alert("อัปเดตข้อมูลสำเร็จ");
+        } else {
+          alert("ไม่สามารถอัปเดตข้อมูลได้");
+        }
+      } else {
+        alert("ไม่สามารถอัปเดตข้อมูลได้");
+      }
     } catch (error) {
       console.error("Error updating document: ", error);
       alert("เกิดข้อผิดพลาดในการอัปเดตข้อมูล");
     }
-  };
+  };  
 
   return (
     <ScrollView>
@@ -353,29 +386,55 @@ function EditProcedureScreen({ route, navigation }) {
 
       <View style={{ flexDirection: dimensions.width < 768 ? 'column' : 'row', justifyContent: 'space-between', marginBottom: 16 }}>
         <View style={{ width: dimensions.width < 768 ? '100%' : '45%' }}>
-          <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left', alignItems: 'flex-start' }}>HN</Text>
+        <Text
+              style={{
+                fontSize: 20,
+                fontWeight: 400,
+                marginVertical: 8,
+                textAlign: "left",
+                alignItems: "flex-start",
+              }}
+            >
+              HN
+            </Text>
             <View style={{
-              height: 48,
+              flexDirection: 'row',
               borderColor: '#FEF0E6',
               borderWidth: 1,
               borderRadius: 10,
-              alignItems: 'left',
-              justifyContent: 'left',
+              alignItems: 'center',
+              justifyContent: 'space-between',
             }}>
-              <TextInput
-                placeholder="Fill the hospital number"
-                placeholderTextColor="grey"
-                value={hn}
-                onChangeText={setHN}
-                style={{
-                  width: '100%',
-                  textAlign: 'center',
-                  height: '100%',
-                  fontSize: 20,
-                  backgroundColor: '#FEF0E6'
-                }}
-              />
-            </View>
+            <TextInput
+              placeholder="6-digit HN"
+              placeholderTextColor="grey"
+              value={lastHN}
+              onChangeText={setLastHN}
+              keyboardType="numeric"
+              maxLength={6}
+              style={{
+                flex: 1,
+                textAlign: 'center',
+                fontSize: 20,
+                backgroundColor: '#FEF0E6'
+              }}
+            />
+            <Text style={{ marginHorizontal: 5 }}>/</Text>
+            <TextInput
+              placeholder="YY"
+              placeholderTextColor="grey"
+              value={hnYear}
+              onChangeText={setHNYear}
+              keyboardType="numeric"
+              maxLength={2}
+              style={{
+                width: 60,
+                textAlign: 'center',
+                fontSize: 20,
+                backgroundColor: '#FEF0E6'
+              }}
+            />
+          </View>
         </View>
         <View style={{ width: dimensions.width < 768 ? '100%' : '45%' }}>
           <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left', alignItems: 'flex-start' }}>Approver</Text>
@@ -416,7 +475,7 @@ function EditProcedureScreen({ route, navigation }) {
               marginVertical: 8,
               textAlign: 'left'
 
-            }}>Level</Text>
+            }}>Level (เลือกได้เพียง 1 ตัวเลือก)</Text>
 
             <View style={{ flexDirection: dimensions.width < 768 ? 'column' : 'row', justifyContent: 'space-between', width: '100%'}}>
               <View style={styles.checkboxContainerStyle}>

@@ -3,7 +3,7 @@ import { View, Text, Button, StyleSheet, TouchableOpacity, TextInput, Platform, 
 import { SelectList } from "react-native-dropdown-select-list";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { db, auth, storage } from '../../data/firebaseDB'
-import { getDocs, addDoc, collection, query, where, Timestamp, doc, updateDoc } from "firebase/firestore";
+import { getDocs, addDoc, collection, query, where, Timestamp, doc, updateDoc, getDoc } from "firebase/firestore";
 import { useDropzone } from 'react-dropzone';
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { FontAwesome, AntDesign } from "@expo/vector-icons";
@@ -16,6 +16,8 @@ function EditIpdScreen({ route, navigation }) {
   const [mainDiagnosis, setMainDiagnosis] = useState(patientData.mainDiagnosis || []);
   const [selectedDiagnosis, setSelectedDiagnosis] = useState(patientData.coMorbid || []);
   const [hn, setHN] = useState(patientData.hn);
+  const [hnYear, setHNYear] = useState(patientData.hnYear);
+  const [lastHN, setLastHN] = useState(patientData.lastHN);
   const [note, setNote] = useState(patientData.note);
   const [selectedHour, setSelectedHour] = useState(patientData.hours.toString());
   const [selectedMinute, setSelectedMinute] = useState(patientData.minutes.toString());
@@ -28,7 +30,10 @@ function EditIpdScreen({ route, navigation }) {
   const [isFocused, setIsFocused] = useState(false);
   const [date, setDate] = useState(new Date());
   const [show, setShow] = useState(false);
-  
+
+  const [isOtherSelected, setIsOtherSelected] = useState(false);
+  const [otherDiagnosis, setOtherDiagnosis] = useState("");
+
   const [windowWidth, setWindowWidth] = useState(Dimensions.get('window').width);
   const [dimensions, setDimensions] = useState(Dimensions.get('window'));
 
@@ -70,13 +75,31 @@ function EditIpdScreen({ route, navigation }) {
   });
 
   const fetchMainDiagnoses = async () => {
-    const mainDiagnosisRef = collection(db, "mainDiagnosis");
-    const diagnosisSnapshot = await getDocs(mainDiagnosisRef);
-    return diagnosisSnapshot.docs.map(doc => {
-      const disease = doc.data().diseases;
-      return disease.map(d => ({ key: d, value: d }));
-    }).flat();
-  };
+    try {
+      const mainDiagnosisDocRef = doc(db, "mainDiagnosis", "LcvLDMSEraOH9zH4fbmS");
+      const docSnap = await getDoc(mainDiagnosisDocRef);
+  
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const diagnoses = data.diseases.map((disease, index) => ({
+          key: `${(index + 1).toString().padStart(3, '0')} | ${disease}`, // ปรับแก้ที่นี่เพื่อให้ key เป็นชื่อโรคด้วย
+          value: `${(index + 1).toString().padStart(3, '0')} | ${disease}`
+        }));
+  
+        diagnoses.sort((a, b) => a.value.localeCompare(b.value));
+  
+        setMainDiagnoses(diagnoses);
+      } else {
+        console.log("No such document!");
+      }
+    } catch (error) {
+      console.error("Error fetching main diagnoses:", error);
+    }
+  }
+
+  useEffect(() => {
+    fetchMainDiagnoses();
+  }, []);
 
   const fetchTeachers = async () => {
     const teacherRef = collection(db, "users");
@@ -89,37 +112,90 @@ function EditIpdScreen({ route, navigation }) {
   };
 
   const saveDataToFirestore = async () => {
-    if (!mainDiagnosis || !hn || !selectedDate || !professorId) {
-      alert("กรุณากรอกข้อมูลที่จำเป็น");
-      return;
-    }
-
+    
     try {
+      if (!mainDiagnosis && !otherDiagnosis) {
+        alert("โปรดกรอก Main Diagnosis หรือใส่โรคอื่นๆ");
+        return;
+      }
+  
+      if (!hn || !hnYear) {
+        alert("โปรดกรอก HN และปีพ.ศ.");
+        return;
+      }
+  
+      if (!selectedDate) {
+        alert("โปรดเลือกวันที่รับผู้ป่วย");
+        return;
+      }
+  
+      if (!professorName) {
+        alert("โปรดเลือกอาจารย์");
+        return;
+      }
+    
+      // ปรับปรุง HN และปีพ.ศ. เพื่อให้ครบ 6 หลักและ 2 หลักตามที่ต้องการ
+      const formattedHN = lastHN.padStart(6, '0');
+      const formattedHNYear = hnYear.padStart(2, '0');
+    
+      // รวม HN และปีพ.ศ. เข้าด้วยกัน
+      const fullHN = formattedHNYear + formattedHN;
+  
       let uploadedPdfUrl = pdfUrl;
       if (pdfFile && typeof pdfFile === 'object') {
         uploadedPdfUrl = await uploadPdfToStorage();
       }
-
+  
       const patientDocRef = doc(db, "patients", patientData.id);
-      await updateDoc(patientDocRef, {
-        admissionDate: Timestamp.fromDate(new Date(selectedDate)),
-        coMorbid: selectedDiagnosis,
-        hn,
-        mainDiagnosis,
-        note,
-        professorId,
-        professorName: teachers.find(t => t.key === professorId)?.value,
-        hours: parseInt(selectedHour),
-        minutes: parseInt(selectedMinute),
-        pdfUrl: uploadedPdfUrl
-      });
-
-      alert("อัปเดตข้อมูลสำเร็จ");
+      const patientDocSnapshot = await getDoc(patientDocRef);
+      
+      if (patientDocSnapshot.exists()) {
+        const patientData = patientDocSnapshot.data();
+        
+        if (patientData.status === "reApproved") {
+          await updateDoc(patientDocRef, {
+            admissionDate: Timestamp.fromDate(new Date(selectedDate)),
+            coMorbid: selectedDiagnosis,
+            hn: fullHN,
+            mainDiagnosis: isOtherSelected ? otherDiagnosis : mainDiagnosis,
+            note,
+            professorId,
+            professorName: teachers.find(t => t.key === professorId)?.value,
+            hours: parseInt(selectedHour),
+            minutes: parseInt(selectedMinute),
+            pdfUrl: uploadedPdfUrl,
+            isEdited: true
+          });
+  
+          alert("อัปเดตข้อมูลสำเร็จ");
+        } else if (patientData.status === "pending" || patientData.status === "rejected") {
+          await updateDoc(patientDocRef, {
+            admissionDate: Timestamp.fromDate(new Date(selectedDate)),
+            coMorbid: selectedDiagnosis,
+            hn: fullHN,
+            mainDiagnosis: isOtherSelected ? otherDiagnosis : mainDiagnosis,
+            note,
+            professorId,
+            professorName: teachers.find(t => t.key === professorId)?.value,
+            hours: parseInt(selectedHour),
+            minutes: parseInt(selectedMinute),
+            pdfUrl: uploadedPdfUrl,
+            lastHN: formattedHN,
+            hnYear
+          });
+  
+          alert("อัปเดตข้อมูลสำเร็จ");
+        } else {
+          alert("ไม่สามารถอัปเดตข้อมูลได้");
+        }
+      } else {
+        alert("ไม่สามารถอัปเดตข้อมูลได้");
+      }
     } catch (error) {
       console.error("Error updating document: ", error);
       alert("เกิดข้อผิดพลาดในการอัปเดตข้อมูล");
     }
-  };
+  };  
 
   const onChange = (event, selectedDate) => {
     const currentDate = selectedDate || date;
@@ -261,22 +337,38 @@ const removeDiagnosis = (index) => {
         <View style={{ width: dimensions.width < 768 ? '100%' : '45%' }}>
           <Text style={{ fontSize: 20, fontWeight: 400, marginVertical: 8, textAlign: 'left', alignItems: 'flex-start' }}>HN</Text>
             <View style={{
-              height: 48,
-              borderColor: '#FEF0E6',
-              borderWidth: 1,
-              borderRadius: 10,
-              alignItems: 'left',
-              justifyContent: 'left',
-            }}>
+                flexDirection: 'row',
+                borderColor: '#FEF0E6',
+                borderWidth: 1,
+                borderRadius: 10,
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}>
               <TextInput
-                placeholder="Fill the hospital number"
+                placeholder="6-digit HN"
                 placeholderTextColor="grey"
-                value={hn}
-                onChangeText={setHN}
+                value={lastHN}
+                onChangeText={setLastHN}
+                keyboardType="numeric"
+                maxLength={6}
                 style={{
-                  width: '100%',
+                  flex: 1,
                   textAlign: 'center',
-                  height: '100%',
+                  fontSize: 20,
+                  backgroundColor: '#FEF0E6'
+                }}
+              />
+              <Text style={{ marginHorizontal: 5 }}>/</Text>
+              <TextInput
+                placeholder="YY"
+                placeholderTextColor="grey"
+                value={hnYear}
+                onChangeText={setHNYear}
+                keyboardType="numeric"
+                maxLength={2}
+                style={{
+                  width: 60,
+                  textAlign: 'center',
                   fontSize: 20,
                   backgroundColor: '#FEF0E6'
                 }}
@@ -305,32 +397,59 @@ const removeDiagnosis = (index) => {
             marginVertical: 8,
             textAlign: 'left'
 
-          }}>Main Diagnosis</Text>
+          }}>Main Diagnosis (ถ้าไม่มีตัวเลือก ให้เลือก Other)</Text>
         </View>
         
-        <View style={{
-              height: 48,
-              borderColor: '#FEF0E6',
-              borderWidth: 1,
-              borderRadius: 10,
-              alignItems: 'left',
-              justifyContent: 'left',
-              marginVertical: 8,
-            }}>
-          <TextInput
-              placeholder="Fill the main diagnosis"
-              placeholderTextColor="grey"
-              value={mainDiagnosis}
-              onChangeText={setMainDiagnosis}
-              style={{
-                width: '100%',
-                textAlign: 'center',
-                height: '100%',
-                fontSize: 20,
-                backgroundColor: '#FEF0E6'
-              }}
-            />
-          </View>
+          {isOtherSelected ? (
+  <View
+    style={{
+      height: 48,
+      borderColor: "#FEF0E6",
+      borderWidth: 1,
+      borderRadius: 10,
+      alignItems: "left",
+      justifyContent: "left",
+      marginVertical: 8,
+    }}
+  >
+    <TextInput
+      placeholder="Fill the main diagnosis"
+      placeholderTextColor="grey"
+      value={otherDiagnosis} // Display otherDiagnosis value here
+      onChangeText={setOtherDiagnosis}
+      style={{
+        width: "100%",
+        textAlign: "center",
+        height: "100%",
+        fontSize: 20,
+        backgroundColor: "#FEF0E6",
+      }}
+    />
+  </View>
+) : (
+  <SelectList
+    setSelected={(value) => {
+      if (value === "Other") {
+        setIsOtherSelected(true);
+        setMainDiagnosis(""); // เปลี่ยนเป็น string และกำหนดให้เป็นค่าว่างเมื่อเลือก Other
+      } else {
+        setIsOtherSelected(false);
+        setMainDiagnosis(value); // เปลี่ยนค่า mainDiagnosis เมื่อเลือก diagnosis อื่น
+      }
+    }}
+    data={[...mainDiagnoses, { key: "Other", value: "Other" }]}
+    placeholder={"Select a diagnosis"}
+    defaultOption={{ key: mainDiagnosis, value: mainDiagnosis }} // กำหนด defaultOption ให้เป็นค่า mainDiagnosis ปัจจุบัน
+    boxStyles={{
+      width: "auto",
+      backgroundColor: "#FEF0E6",
+      borderColor: "#FEF0E6",
+      borderWidth: 1,
+      borderRadius: 10,
+    }}
+    dropdownStyles={{ backgroundColor: "#FEF0E6" }}
+  />
+)}
 
           <View>
           <Text style={{

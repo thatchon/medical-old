@@ -40,9 +40,9 @@ function IpdScreen({ navigation }) {
   const [patientData, setPatientData] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [comment, setComment] = useState(""); // สำหรับเก็บความคิดเห็นของอาจารย์
-  const [action, setAction] = useState(null); // ตัวแปรสำหรับเก็บว่า user กำลังทำงานอะไร หรือกดปุ่มไหน
   const currentUserUid = useSelector((state) => state.user.uid); // สมมติว่า uid เก็บอยู่ใน userUid ของ state
   const role = useSelector((state) => state.role);
+  const subject = useSelector((state) => state.subject);
 
   const [windowWidth, setWindowWidth] = useState(
     Dimensions.get("window").width
@@ -62,6 +62,24 @@ function IpdScreen({ navigation }) {
     { key: "rejected", value: "Rejected" },
     { key: "reApproved", value: "Re-approved" },
   ];
+
+  const [selectedSubject, setSelectedSubject] = useState("All");
+  const subjectsByYear = [
+    { key: "All", value: "All"},
+    { key: "Family medicine clerkship", value: "Family medicine clerkship"},
+    { key: "Internal medicine clerkship", value: "Internal medicine clerkship"},
+    { key: "Surgery clerkship", value: "Surgery clerkship"},
+    { key: "Anesthesiology, cardiology and critical care medicine clerkship", value: "Anesthesiology, cardiology and critical care medicine clerkship"},
+    { key: "Obstetrics and gynecology clerkship", value: "Obstetrics and gynecology clerkship"},
+    { key: "Ambulatory medicine clerkship", value: "Ambulatory medicine clerkship"},
+    { key: "Accident and emergency medicine clerkship", value: "Accident and emergency medicine clerkship"},
+    { key: "Oncology and palliative medicine clerkship", value: "Oncology and palliative medicine clerkship"},
+    { key: "Practicum in internal medicine", value: "Practicum in internal medicine"},
+    { key: "Practicum in surgery", value: "Practicum in surgery"},
+    { key: "Practicum in Pediatrics", value: "Practicum in Pediatrics"},
+    { key: "Practicum in Obstetrics and gynecology", value: "Practicum in Obstetrics and gynecology"},
+    { key: "Practicum in orthopedics and emergency medicine", value: "Practicum in orthopedics and emergency medicine"}
+];
 
   const [searchText, setSearchText] = useState("");
   const [filteredPatientData, setFilteredPatientData] = useState([]); // state เก็บข้อมูลผู้ใช้ที่ผ่านการกรอง
@@ -84,7 +102,6 @@ function IpdScreen({ navigation }) {
   // ประกาศ State สำหรับการเก็บค่าการให้คะแนน
   const [rating, setRating] = useState("");
 
-  // ฟังก์ชันสำหรับการจัดการการเปลี่ยนแปลงของ CheckBox
   const handleRatingChange = (newRating) => {
     setRating(newRating);
   };
@@ -103,7 +120,7 @@ function IpdScreen({ navigation }) {
       (patient) =>
         patient.patientType === "inpatient" && // ตรวจสอบ patientType เป็น inpatient
         patient.hn &&
-        patient.hn.toLowerCase().includes(searchText) // ค้นหา hn ใน Collection patients
+        patient.hn.toLowerCase().includes(searchText) 
     );
 
     setFilteredPatientData(filteredPatients);
@@ -143,6 +160,43 @@ function IpdScreen({ navigation }) {
       ...prevScores,
       [scoreName]: !prevScores[scoreName],
     }));
+  };
+
+  useEffect(() => {
+    if (selectedPatient) {
+      if (selectedStatus === 'reApproved') {
+        setComment(selectedPatient.comment || '');
+        setRating(selectedPatient.rating || '');
+        setProfessionalismScores(selectedPatient.professionalismScores || {
+          punctual: false,
+          appropriatelyDressed: false,
+          respectsPatients: false,
+          goodListener: false,
+          respectsColleagues: false,
+          accurateRecordKeeping: false,
+        });
+      } else if (selectedStatus === 'pending') {
+        setComment('');
+        setRating('');
+        setProfessionalismScores({
+          punctual: false,
+          appropriatelyDressed: false,
+          respectsPatients: false,
+          goodListener: false,
+          respectsColleagues: false,
+          accurateRecordKeeping: false,
+        });
+      }
+    }
+  }, [selectedStatus, selectedPatient]);  
+
+  const isEditable = () => {
+    if (selectedStatus === 'pending') {
+      return true;
+    } else if (selectedStatus === 'reApproved') {
+      return selectedPatient ? selectedPatient.isEdited : false;
+    }
+    return false;
   };
 
   const [isApproveAllModalVisible, setApproveAllModalVisible] = useState(false);
@@ -212,7 +266,7 @@ function IpdScreen({ navigation }) {
       shadowRadius: 4,
       elevation: 5,
       width: isMobile ? "90%" : isTablet ? "70%" : "50%", // Responsive width
-      height: isMobile ? "auto" : "70%", // Auto height for mobile
+      height: isMobile ? "80%" : "70%", // Auto height for mobile
     },
     button: {
       backgroundColor: "#05AB9F",
@@ -246,6 +300,11 @@ function IpdScreen({ navigation }) {
       marginBottom: 15,
       textAlign: "left",
       fontSize: windowWidth < 768 ? 20 : 24,
+    },
+    modalText2: {
+      marginBottom: 15,
+      textAlign: "center",
+      fontSize: windowWidth < 768 ? 22 : 26,
     },
     centerView: {
       flex: 1,
@@ -409,7 +468,7 @@ function IpdScreen({ navigation }) {
     const year = date.getFullYear();
     return `${day} ${thaiMonths[month]} ${year}`;
   };
-  // {formatTimeUnit(selectedPatient.hours)}.{formatTimeUnit(selectedPatient.minutes)}
+
   const loadPatientData = async () => {
     try {
       setIsLoading(true);
@@ -487,20 +546,6 @@ function IpdScreen({ navigation }) {
     navigation.navigate("AddIpd");
   };
 
-  const handleCloseModal = () => {
-    setConfirmationModalVisible(false);
-    setComment(""); // ล้างความคิดเห็น
-    setRating("");
-    setProfessionalismScores({
-      punctual: false,
-      appropriatelyDressed: false,
-      respectsPatients: false,
-      goodListener: false,
-      respectsColleagues: false,
-      accurateRecordKeeping: false,
-    });
-  };
-
   const handleApprove = async () => {
     try {
       const patientDocRef = doc(db, "patients", selectedPatient.id);
@@ -527,15 +572,17 @@ function IpdScreen({ navigation }) {
         status: "reApproved",
         comment: comment,
         rating: rating,
-        approvalTimestamp: Timestamp.now(),
+        reApprovalTimestamp: Timestamp.now(),
         professionalismScores: professionalismScores, // บันทึกคะแนนความเป็นมืออาชีพ
+        isReApproved: true,
+        isEdited: false
       });
       // รีเซ็ตคะแนนและความคิดเห็น
       resetScoresAndComment();
       setModalVisible(false);
       loadPatientData();
     } catch (error) {
-      console.error("Error approving patient:", error);
+      console.error("Error re-approving patient:", error);
     }
   };
 
@@ -666,7 +713,7 @@ function IpdScreen({ navigation }) {
       console.error("Error deleting patient:", error);
     }
   };
-
+  
   const renderCards = () => {
     if (isLoading) {
       // แสดง animation loading หรือข้อความแสดงสถานะ loading
@@ -677,7 +724,9 @@ function IpdScreen({ navigation }) {
       );
     }
     return filteredPatientData
+      .filter((patient) => selectedSubject === "All" || (patient.subject && patient.subject === selectedSubject))
       .filter((patient) => patient.status === selectedStatus)
+      .filter((patient) => role === 'student' ? patient.subject === subject : true) // เพิ่มเงื่อนไขกรองข้อมูลตามวิชาเฉพาะสำหรับนักศึกษา
       .sort((a, b) => b.admissionDate.toDate() - a.admissionDate.toDate()) // เรียงลำดับตามวันที่ล่าสุดไปยังเก่าสุด
       .map((patient, index) => (
         <TouchableOpacity
@@ -689,15 +738,12 @@ function IpdScreen({ navigation }) {
             <View style={styles.leftContainer}>
               {role === "student" ? (
                 <>
-                  <Text
-                    style={{
-                      fontSize: 20,
-                      fontWeight: "bold",
-                      marginLeft: 20,
-                      lineHeight: 30,
-                    }}
-                  >
-                    HN : {patient.hn} ({patient.status})
+                  <Text style={{ fontSize: 20, fontWeight: "bold", marginLeft: 20, lineHeight: 30 }}>
+                    HN : {patient.hn} (
+                    <Text style={{ color: patient.isEdited ? 'red' : patient.isEdited === false ? '#e9c46a' : 'inherit' }}>
+                      {patient.status}
+                    </Text>
+                    )
                   </Text>
                   <Text
                     style={{ marginLeft: 20, lineHeight: 30, opacity: 0.4 }}
@@ -739,6 +785,16 @@ function IpdScreen({ navigation }) {
                           )
                         </Text>
                       )}
+                      {patient.reApprovalTimestamp && (
+                        <Text>
+                          {" "}
+                          (Re-Approved:{" "}
+                          {formatDateToThai(
+                            patient.reApprovalTimestamp.toDate()
+                          )}
+                          )
+                        </Text>
+                      )}
                     </Text>
                   )}
 
@@ -774,15 +830,12 @@ function IpdScreen({ navigation }) {
                 </>
               ) : (
                 <>
-                  <Text
-                    style={{
-                      fontSize: 20,
-                      fontWeight: "bold",
-                      marginLeft: 20,
-                      lineHeight: 30,
-                    }}
-                  >
-                    HN : {patient.hn} ({patient.status})
+                  <Text style={{ fontSize: 20, fontWeight: "bold", marginLeft: 20, lineHeight: 30 }}>
+                    HN : {patient.hn} (
+                    <Text style={{ color: patient.isEdited ? 'red' : patient.isEdited === false ? '#e9c46a' : 'inherit' }}>
+                      {patient.status}
+                    </Text>
+                    )
                   </Text>
                   <Text
                     style={{ marginLeft: 20, lineHeight: 30, opacity: 0.4 }}
@@ -820,6 +873,16 @@ function IpdScreen({ navigation }) {
                           (Rejected:{" "}
                           {formatDateToThai(
                             patient.rejectionTimestamp.toDate()
+                          )}
+                          )
+                        </Text>
+                      )}
+                      {patient.reApprovalTimestamp && (
+                        <Text>
+                          {" "}
+                          (Re-approved:{" "}
+                          {formatDateToThai(
+                            patient.reApprovalTimestamp.toDate()
                           )}
                           )
                         </Text>
@@ -883,10 +946,30 @@ function IpdScreen({ navigation }) {
       <View
         style={{
           marginVertical: 10,
-          flexDirection: "row",
+          flexDirection: isMobile ? 'column' : 'row',
           alignItems: "center",
         }}
       >
+        {role !== 'student' && (
+          <SelectList
+            data={subjectsByYear}
+            setSelected={setSelectedSubject}
+            placeholder="Select subjects"
+            defaultOption={selectedSubject}
+            search={false}
+            boxStyles={{
+              width: "auto",
+              backgroundColor: "#FEF0E6",
+              borderColor: "#FEF0E6",
+              borderWidth: 1,
+              borderRadius: 10,
+              marginRight: isMobile ? 0 : 10,
+              marginBottom: isMobile ? 10 : 0,
+            }}
+            dropdownStyles={{ backgroundColor: "#FEF0E6" }}
+          />
+        )}
+
         <SelectList
           data={statusOptions}
           setSelected={setSelectedStatus}
@@ -899,6 +982,7 @@ function IpdScreen({ navigation }) {
             borderColor: "#FEF0E6",
             borderWidth: 1,
             borderRadius: 10,
+            marginBottom: isMobile ? 10 : 0
           }}
           dropdownStyles={{ backgroundColor: "#FEF0E6" }}
         />
@@ -911,7 +995,8 @@ function IpdScreen({ navigation }) {
             borderWidth: 1,
             borderRadius: 10,
             padding: 12,
-            marginLeft: 15,
+            marginLeft: isMobile ? 0 : 15,
+            textAlign: 'center'
           }}
           placeholder="Search by hn"
           value={searchText}
@@ -920,142 +1005,6 @@ function IpdScreen({ navigation }) {
           }}
         />
       </View>
-
-      {/* Modal สำหรับยืนยัน Approve/Reject */}
-      {/* <Modal
-        animationType="fade"
-        transparent={true}
-        visible={confirmationModalVisible}
-      >
-        <View style={styles.centerView}>
-          <View style={styles.modalView}>
-            <ScrollView style={{ width: "100%" }}>
-              <Text style={styles.professionalismHeader}>Professionalism</Text>
-              <View style={styles.checkboxContainer}>
-                <CheckBox
-                  value={professionalismScores.punctual}
-                  onValueChange={() => handleCheckboxChange("punctual")}
-                />
-                <Text style={styles.checkboxLabel}>Punctual</Text>
-              </View>
-
-              <View style={styles.checkboxContainer}>
-                <CheckBox
-                  value={professionalismScores.appropriatelyDressed}
-                  onValueChange={() =>
-                    handleCheckboxChange("appropriatelyDressed")
-                  }
-                />
-                <Text style={styles.checkboxLabel}>Appropriately dressed</Text>
-              </View>
-
-              <View style={styles.checkboxContainer}>
-                <CheckBox
-                  value={professionalismScores.respectsPatients}
-                  onValueChange={() => handleCheckboxChange("respectsPatients")}
-                />
-                <Text style={styles.checkboxLabel}>Respect the patient</Text>
-              </View>
-
-              <View style={styles.checkboxContainer}>
-                <CheckBox
-                  value={professionalismScores.goodListener}
-                  onValueChange={() => handleCheckboxChange("goodListener")}
-                />
-                <Text style={styles.checkboxLabel}>Good listener</Text>
-              </View>
-
-              <View style={styles.checkboxContainer}>
-                <CheckBox
-                  value={professionalismScores.respectsColleagues}
-                  onValueChange={() =>
-                    handleCheckboxChange("respectsColleagues")
-                  }
-                />
-                <Text style={styles.checkboxLabel}>Respect colleagues</Text>
-              </View>
-
-              <View style={styles.checkboxContainer}>
-                <CheckBox
-                  value={professionalismScores.accurateRecordKeeping}
-                  onValueChange={() =>
-                    handleCheckboxChange("accurateRecordKeeping")
-                  }
-                />
-                <Text style={styles.checkboxLabel}>
-                  Accurately record patient information
-                </Text>
-              </View>
-
-              <Text
-                style={{ fontSize: 20, fontWeight: "bold", marginBottom: 10 }}
-              >
-                Rating
-              </Text>
-              <View style={styles.checkboxContainer}>
-                <CheckBox
-                  value={rating === "Excellent"}
-                  onValueChange={() => handleRatingChange("Excellent")}
-                />
-                <Text style={styles.checkboxLabel}>Excellent</Text>
-              </View>
-              <View style={styles.checkboxContainer}>
-                <CheckBox
-                  value={rating === "Good"}
-                  onValueChange={() => handleRatingChange("Good")}
-                />
-                <Text style={styles.checkboxLabel}>Good</Text>
-              </View>
-              <View style={styles.checkboxContainer}>
-                <CheckBox
-                  value={rating === "Acceptable"}
-                  onValueChange={() => handleRatingChange("Acceptable")}
-                />
-                <Text style={styles.checkboxLabel}>Acceptable</Text>
-              </View>
-
-              <Text
-                style={{ marginBottom: 10, fontSize: 20, fontWeight: "bold" }}
-              >
-                Add comment(optional)
-              </Text>
-              <TextInput
-                placeholder="Please enter a comment."
-                placeholderTextColor="grey"
-                value={comment}
-                onChangeText={setComment}
-                multiline
-                numberOfLines={4}
-                style={{
-                  height: 150,
-                  width: "100%",
-                  borderColor: "gray",
-                  borderWidth: 1,
-                  borderRadius: 10,
-                  marginBottom: 20,
-                  textAlignVertical: "top",
-                }}
-              />
-              <View style={styles.buttonContainer}>
-                <Pressable
-                  style={[styles.recheckModalButton, styles.buttonApprove]}
-                  onPress={() => {
-                    action === "approve" ? handleApprove() : handleReject();
-                  }}
-                >
-                  <Text style={styles.textStyle}>Confirm</Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.recheckModalButton, styles.buttonCancel]}
-                  onPress={handleCloseModal}
-                >
-                  <Text style={styles.textStyle}>Cancel</Text>
-                </Pressable>
-              </View>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal> */}
 
       {/* Modal สำหรับยืนยัน ApproveAll */}
       <Modal
@@ -1125,6 +1074,11 @@ function IpdScreen({ navigation }) {
       </Modal>
 
       <View style={styles.boxCard}>
+        {role === 'student' && (
+          <Text style={styles.modalText}>
+            <Text style={{ fontWeight: 'bold' }}>{subject}</Text>
+          </Text>
+        )}
         <ScrollView>{renderCards()}</ScrollView>
       </View>
 
@@ -1144,6 +1098,11 @@ function IpdScreen({ navigation }) {
             <ScrollView>
               {selectedPatient && (
                 <>
+                  {role !== 'student' && selectedPatient.subject ? (
+                      <Text style={styles.modalText2}>
+                        <Text style={{ fontWeight: 'bold' }}>{selectedPatient.subject}</Text>
+                      </Text>
+                    ) : null}
                   <Text style={styles.modalText}>
                     <Text style={{ fontWeight: "bold" }}>
                       Admission Date :{" "}
@@ -1200,7 +1159,8 @@ function IpdScreen({ navigation }) {
                   </Text>
 
                   {(selectedStatus === "approved" ||
-                    selectedStatus === "rejected") && (
+                    selectedStatus === "rejected" ||
+                    (selectedStatus === "reApproved" && role === "student")) && (
                     <Text style={styles.modalText}>
                       <Text style={{ fontWeight: "bold" }}>Rating : </Text>
                       {selectedPatient.rating || "ไม่มี"}
@@ -1208,7 +1168,8 @@ function IpdScreen({ navigation }) {
                   )}
 
                   {(selectedStatus === "approved" ||
-                    selectedStatus === "rejected") && (
+                    selectedStatus === "rejected" ||
+                    (selectedStatus === "reApproved" && role === "student")) && (
                     <Text style={styles.modalText}>
                       <Text style={{ fontWeight: "bold" }}>***Comment : </Text>
                       {selectedPatient.comment || "ไม่มี"}
@@ -1216,8 +1177,9 @@ function IpdScreen({ navigation }) {
                   )}
 
                   <View style={styles.buttonRow}>
-                    {(selectedStatus === "approved" ||
-                      selectedStatus === "rejected") && (
+                  {(selectedStatus === "approved" ||
+                    selectedStatus === "rejected" ||
+                    (selectedStatus === "reApproved" && role === "student")) && (
                       <Pressable
                         style={[styles.button, styles.buttonProfessional]}
                         onPress={() =>
@@ -1238,77 +1200,71 @@ function IpdScreen({ navigation }) {
                             Professionalism
                           </Text>{" "}(เลือกได้หลายตัวเลือก)
                           {/* แสดง Checkbox และ Label */}
-                          <View style={styles.checkboxContainer}>
-                            <CheckBox
-                              value={professionalismScores.punctual}
-                              onValueChange={() =>
-                                handleCheckboxChange("punctual")
-                              }
-                            />
-                            <Text style={styles.checkboxLabel}>Punctual</Text>
-                          </View>
+                          {selectedPatient && (
+                            <View style={styles.checkboxContainer}>
+                              <CheckBox
+                                value={professionalismScores.punctual}
+                                disabled={!isEditable()}
+                                onValueChange={() => handleCheckboxChange("punctual")}
+                              />
+                              <Text style={styles.checkboxLabel}>Punctual</Text>
+                            </View>
+                          )}
 
-                          <View style={styles.checkboxContainer}>
-                            <CheckBox
-                              value={professionalismScores.appropriatelyDressed}
-                              onValueChange={() =>
-                                handleCheckboxChange("appropriatelyDressed")
-                              }
-                            />
-                            <Text style={styles.checkboxLabel}>
-                              Appropriately dressed
-                            </Text>
-                          </View>
+                          {selectedPatient && (
+                            <View style={styles.checkboxContainer}>
+                              <CheckBox
+                                value={professionalismScores.appropriatelyDressed}
+                                disabled={!isEditable()}
+                                onValueChange={() => handleCheckboxChange("appropriatelyDressed")}
+                              />
+                              <Text style={styles.checkboxLabel}>Appropriately dressed</Text>
+                            </View>
+                          )}
 
-                          <View style={styles.checkboxContainer}>
-                            <CheckBox
-                              value={professionalismScores.respectsPatients}
-                              onValueChange={() =>
-                                handleCheckboxChange("respectsPatients")
-                              }
-                            />
-                            <Text style={styles.checkboxLabel}>
-                              Respect the patient
-                            </Text>
-                          </View>
+                          {selectedPatient && (
+                            <View style={styles.checkboxContainer}>
+                              <CheckBox
+                                value={professionalismScores.respectsPatients}
+                                disabled={!isEditable()}
+                                onValueChange={() => handleCheckboxChange("respectsPatients")}
+                              />
+                              <Text style={styles.checkboxLabel}>Respect the patient</Text>
+                            </View>
+                          )}
 
-                          <View style={styles.checkboxContainer}>
-                            <CheckBox
-                              value={professionalismScores.goodListener}
-                              onValueChange={() =>
-                                handleCheckboxChange("goodListener")
-                              }
-                            />
-                            <Text style={styles.checkboxLabel}>
-                              Good listener
-                            </Text>
-                          </View>
+                          {selectedPatient && (
+                            <View style={styles.checkboxContainer}>
+                              <CheckBox
+                                value={professionalismScores.goodListener}
+                                disabled={!isEditable()}
+                                onValueChange={() => handleCheckboxChange("goodListener")}
+                              />
+                              <Text style={styles.checkboxLabel}>Good listener</Text>
+                            </View>
+                          )}
 
-                          <View style={styles.checkboxContainer}>
-                            <CheckBox
-                              value={professionalismScores.respectsColleagues}
-                              onValueChange={() =>
-                                handleCheckboxChange("respectsColleagues")
-                              }
-                            />
-                            <Text style={styles.checkboxLabel}>
-                              Respect colleagues
-                            </Text>
-                          </View>
+                          {selectedPatient && (
+                            <View style={styles.checkboxContainer}>
+                              <CheckBox
+                                value={professionalismScores.respectsColleagues}
+                                disabled={!isEditable()}
+                                onValueChange={() => handleCheckboxChange("respectsColleagues")}
+                              />
+                              <Text style={styles.checkboxLabel}>Respect colleagues</Text>
+                            </View>
+                          )}
 
-                          <View style={styles.checkboxContainer}>
-                            <CheckBox
-                              value={
-                                professionalismScores.accurateRecordKeeping
-                              }
-                              onValueChange={() =>
-                                handleCheckboxChange("accurateRecordKeeping")
-                              }
-                            />
-                            <Text style={styles.checkboxLabel}>
-                              Accurately record patient information
-                            </Text>
-                          </View>
+                          {selectedPatient && (
+                            <View style={styles.checkboxContainer}>
+                              <CheckBox
+                                value={professionalismScores.accurateRecordKeeping}
+                                disabled={!isEditable()}
+                                onValueChange={() => handleCheckboxChange("accurateRecordKeeping")}
+                              />
+                              <Text style={styles.checkboxLabel}>Accurately record patient information</Text>
+                            </View>
+                          )}
 
                           <Text
                             style={{
@@ -1322,35 +1278,32 @@ function IpdScreen({ navigation }) {
                           <View style={styles.checkboxContainer}>
                             <CheckBox
                               value={rating === "Excellent"}
-                              onValueChange={() =>
-                                handleRatingChange("Excellent")
-                              }
+                              disabled={!isEditable()}
+                              onValueChange={() => handleRatingChange("Excellent")}
                             />
                             <Text style={styles.checkboxLabel}>Excellent</Text>
                           </View>
                           <View style={styles.checkboxContainer}>
                             <CheckBox
                               value={rating === "Good"}
-                              onValueChange={() => 
-                                handleRatingChange("Good")}
+                              disabled={!isEditable()}
+                              onValueChange={() => handleRatingChange("Good")}
                             />
                             <Text style={styles.checkboxLabel}>Good</Text>
                           </View>
                           <View style={styles.checkboxContainer}>
                             <CheckBox
                               value={rating === "Acceptable"}
-                              onValueChange={() =>
-                                handleRatingChange("Acceptable")
-                              }
+                              disabled={!isEditable()}
+                              onValueChange={() => handleRatingChange("Acceptable")}
                             />
                             <Text style={styles.checkboxLabel}>Acceptable</Text>
                           </View>
                           <View style={styles.checkboxContainer}>
                             <CheckBox
                               value={rating === "Unsatisfied"}
-                              onValueChange={() =>
-                                handleRatingChange("Unsatisfied")
-                              }
+                              disabled={!isEditable()}
+                              onValueChange={() => handleRatingChange("Unsatisfied")}
                             />
                             <Text style={styles.checkboxLabel}>Unsatisfied</Text>
                           </View>
@@ -1368,9 +1321,10 @@ function IpdScreen({ navigation }) {
                             placeholder="Please enter a comment."
                             placeholderTextColor="grey"
                             value={comment}
-                            onChangeText={setComment}
+                            onChangeText={text => setComment(text)}
                             multiline
                             numberOfLines={4}
+                            editable={isEditable()}
                             style={{
                               height: 150,
                               width: "100%",
@@ -1390,6 +1344,7 @@ function IpdScreen({ navigation }) {
                             </Pressable>
                           )}
                           <View style={styles.buttonContainer}>
+                          {(selectedPatient.isEdited  || selectedStatus === 'pending') && (
                             <Pressable
                               style={[
                                 styles.recheckModalButton,
@@ -1399,15 +1354,19 @@ function IpdScreen({ navigation }) {
                             >
                               <Text style={styles.textStyle}>Approve</Text>
                             </Pressable>
-                            <Pressable
-                              style={[
-                                styles.recheckModalButton,
-                                styles.buttonReApprove,
-                              ]}
-                              onPress={() => handleReApprove()}
-                            >
-                              <Text style={styles.textStyle}>Re-approve</Text>
-                            </Pressable>
+                          )}
+                            {!selectedPatient.isReApproved && (
+                              <Pressable
+                                style={[
+                                  styles.recheckModalButton,
+                                  styles.buttonReApprove,
+                                ]}
+                                onPress={() => handleReApprove()}
+                              >
+                                <Text style={styles.textStyle}>Re-approve</Text>
+                              </Pressable>
+                            )}
+                            {(selectedPatient.isEdited || selectedStatus === 'pending') && (
                             <Pressable
                               style={[
                                 styles.recheckModalButton,
@@ -1417,10 +1376,11 @@ function IpdScreen({ navigation }) {
                             >
                               <Text style={styles.textStyle}>Reject</Text>
                             </Pressable>
+                          )}
                           </View>
                           <Pressable
                         style={[styles.button, styles.buttonClose2]}
-                        onPress={() => setModalVisible(!modalVisible)}
+                        onPress={() => setModalVisible(false) }
                       >
                         <Text style={styles.textStyle}>Close</Text>
                       </Pressable>
@@ -1449,19 +1409,18 @@ function IpdScreen({ navigation }) {
 
                   {/* Modal สำหรับแสดงคะแนนความเป็นมืออาชีพ */}
                   <Modal
-                    animationType="slide"
-                    transparent={true}
-                    visible={
-                      professionalismScoresModalVisible &&
-                      (selectedPatient.status === "approved" ||
-                        selectedPatient.status === "rejected")
-                    }
-                    onRequestClose={() => {
-                      setProfessionalismScoresModalVisible(
-                        !professionalismScoresModalVisible
-                      );
-                    }}
-                  >
+                        animationType="slide"
+                        transparent={true}
+                        visible={
+                            professionalismScoresModalVisible &&
+                            (selectedPatient.status === "approved" ||
+                            selectedPatient.status === "rejected" ||
+                            (selectedPatient.status === "reApproved" && role === "student"))
+                        }
+                        onRequestClose={() => {
+                            setProfessionalismScoresModalVisible(!professionalismScoresModalVisible);
+                        }}
+                    >
                     <View style={styles.centerView}>
                       <View style={styles.modalView}>
                         <Text
